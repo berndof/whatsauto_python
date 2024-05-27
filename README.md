@@ -82,3 +82,107 @@ async def main():
 asyncio.run(main())
 This way you can make multiple requests at the same time, and it will improve the performance of your application.
 
+___
+
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class DatabaseClient:
+    def __init__(self, environment, DB_HOST=None, DB_PORT=None, DB_USER=None, DB_PASSWORD=None, DB_NAME=None):
+        self.engine = create_async_engine(
+            self._construct_db_url(environment, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME),
+            echo=True,  # You can set this to False to reduce logging
+        )
+        self.Session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+
+    def _construct_db_url(self, environment, DB_HOST, DB_PORT, DB_user, DB_PASSWORD, DB_NAME):
+        if environment == "dev" or not environment:
+            return "sqlite+aiosqlite:///db.sqlite"
+        elif environment == "prod":
+            return f"postgresql+asyncpg://{DB_user}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        else:
+            raise ValueError("Invalid environment")
+
+    async def create_all(self):
+        async with self.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    async def get_session(self):
+        # Each call to get_session will provide a new session
+        return self.Session()
+
+    # Placeholder methods for CRUD operations
+    async def add_record(self, record):
+        pass
+
+    async def get_records(self):
+        pass
+
+    async def update_record(self, record):
+        pass
+
+    async def delete_record(self, record):
+        pass
+
+    # Placeholder for migration handling
+    async def run_migrations(self):
+        pass
+
+    # Placeholder for error handling
+    async def handle_errors(self):
+        pass
+This updated class provides a structure that you can further develop as you build out your application. It includes placeholders for CRUD operations, migration handling, and error handling. You can implement the logic for these methods as needed when you define your models in models.py.
+
+The create_all method is already set up to create your tables asynchronously based on the Base.metadata definitions in your models. The get_session method will provide a new session for each database operation, which can be used in manager.py for database interactions.
+
+As you mentioned you're not very familiar with async programming, remember that when you call any of the async methods in DatabaseClient, you'll need to await them to ensure they run as part of the event loop. This is crucial to maintain the non-blocking behavior of your application.
+
+# manage.py
+import asyncio
+from database import DatabaseClient
+from models import User, Base
+
+async def main():
+    # Initialize the DatabaseClient
+    db_client = DatabaseClient(environment="dev")
+    
+    # Create the database tables
+    await db_client.create_all()
+
+    # Create a new user instance
+    new_user = User(name="Alice", age=25)
+    
+    # Add the new user record to the database
+    async with db_client.get_session() as session:
+        session.add(new_user)
+        await session.commit()
+        await session.refresh(new_user)
+        print(f"Added new user: {new_user}")
+
+    # Retrieve a user record from the database
+    async with db_client.get_session() as session:
+        user = await session.get(User, new_user.id)
+        print(f"Retrieved user: {user}")
+
+    # Update a user record in the database
+    async with db_client.get_session() as session:
+        user_to_update = await session.get(User, new_user.id)
+        user_to_update.age = 26  # Update the age
+        await session.commit()
+        print(f"Updated user: {user_to_update}")
+
+    # Delete a user record from the database
+    async with db_client.get_session() as session:
+        user_to_delete = await session.get(User, new_user.id)
+        await session.delete(user_to_delete)
+        await session.commit()
+        print(f"Deleted user: {user_to_delete}")
+
+# Run the main coroutine
+asyncio.run(main())
+
+___
