@@ -17,8 +17,6 @@ class ApiClient():
                 return await response.json()
         
         if method == "GET":
-            async with self.session.get(f"{self.API_URL}{endpoint}", headers=headers, json=data) as response:
+            async with self.session.get(f"{self.API_URL}/{endpoint}", headers=headers, json=data) as response:
                 return await response.json()
     
-    async def close(self):
-        await self.session.close()

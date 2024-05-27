@@ -1,4 +1,5 @@
 import asyncio
+from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -22,6 +23,9 @@ class DatabaseClient:
         else:
             raise ValueError("Invalid environment")
 
+    async def close(self) -> None:
+        await self.engine.dispose()
+
     async def create_all(self) -> None:
         async with self.engine.begin() as conn:
             await conn.run_sync(models.Base.metadata.create_all)
@@ -35,11 +39,27 @@ class DatabaseClient:
             try:
                 session.add(whatsapp_session)
                 await session.commit()
+                #i need to close session?
                 return whatsapp_session
             except IntegrityError:
                 print("WhatsappSession already exists")
                 #TODO add logging
                 await session.rollback()
+            finally:
+                await session.close()
+
+    async def get_whatsapp_session_by_name(self, session_name:str) -> models.WhatsappSession | None:
+        async with (await self.get_db_session()) as session:
+            
+            result = await session.execute(select(models.WhatsappSession).where(models.WhatsappSession.name == session_name))
+            whatsapp_session = result.scalars().first()
+            
+            if not whatsapp_session:
+                return None
+                #TODO raise error, implement logging
+            
+            await session.close()
+            return whatsapp_session
 
     # Placeholder for migration handling
     async def run_migrations(self):
