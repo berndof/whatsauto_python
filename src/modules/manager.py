@@ -3,6 +3,8 @@ from modules.database import DatabaseClient
 from modules import models
 from modules.listener import SocketIOClient
 import asyncio
+import qrcode
+
 ## manager.py
 class Manager():
     def __init__(self):
@@ -13,15 +15,18 @@ class Manager():
         self.api_client = ApiClient(self.API_URL)
         self.socket_io_client = SocketIOClient("http://localhost:21465", self)
         
-        self.qr_code_received = asyncio.Event()
-    
-    async def on_qr_code(self, event, data):
-        print(f"Received qrCode event: {event} with data: {data}")
-        self.qr_code_received.set()
+        self.qr_code_received = asyncio.Event()        
     
     async def _set_database(self, environment):    
         self.db_client = DatabaseClient(environment)
         return await self.db_client.create_all()
+        
+    def _build_qr(self, qr_data:str): #temporario
+        qr = qrcode.QRCode()
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        qr_image = qr.make_image(fill_color="black", back_color="white")
+        qr_image.save("qrcode.png")
         
     async def generate_token(self, session_name):
         print("gerando token")
@@ -60,15 +65,37 @@ class Manager():
         endpoint = f"{session_name}/start-session"
         headers = {"Authorization": f"Bearer {exists_session.token}"}
         response = await self.api_client.make_request("POST", endpoint, headers)
+        print(response)
         
+        #DONT NEED MORE BUT ITS WORKING
         #here i need to wait for a qrCode event of listener.py
-        print("wait for event qrCode")
+        """ print("wait for event qrCode")
         await self.qr_code_received.wait()
-        print("aconteceu caralho")
+        
+        if self.data["session"] == session_name:
+            print("make request to get qr_data") """
+        
+        status = "CLOSED"
+        endpoint = f"{session_name}/status-session"
+        
+        while status != "QRCODE":
+            response = await self.api_client.make_request("GET", endpoint, headers)
+            if not response:
+                continue
+            status = response["status"]
+            await asyncio.sleep(1)
+
+        qr_data = response["urlcode"]
+        
+        self._build_qr(qr_data)
+
+        #await confirmation of login 
+        #Received event: session-logged with data: {'status': True, 'session': 'test_session'}
 
         return
 
     async def on_qr_code(self, event, data):
         print(f"Received qrCode event: {event} with data: {data}")
         self.qr_code_received.set()
+        self.data = data 
         

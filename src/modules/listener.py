@@ -37,4 +37,3 @@ class SocketIOClient:
         self.sio.on("disconnect", self.on_disconnect)
         self.sio.on("*", self.on_event)  # Listen to all events
         asyncio.create_task(self.listen())
-        print("caralho")
