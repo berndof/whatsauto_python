@@ -12,6 +12,8 @@ class Manager():
         self.API_URL = "http://localhost:21465/api"
         self.SECRET_KEY = "Sccint002" 
         
+        self.session_name = "test_session"
+        
         self.api_client = ApiClient(self.API_URL)
         self.socket_io_client = SocketIOClient("http://localhost:21465", self)
         
@@ -95,7 +97,44 @@ class Manager():
         return
 
     async def on_qr_code(self, event, data):
-        print(f"Received qrCode event: {event} with data: {data}")
+        #print(f"Received qrCode event: {event} with data: {data}")
         self.qr_code_received.set()
         self.data = data 
         
+    async def on_received_message(self, event, data):
+        response = data["response"]
+        try: 
+            content = response["content"]
+            sender = response["sender"]
+            sender_phone = sender["id"].split('@')[0]
+            
+            if content.lower() == "ping":
+                await self.send_message("pong", sender_phone)
+            
+        except Exception as e:
+            print(e)
+        
+            
+    async def send_message(self, message, phone) -> None:
+        exists_session = await self.db_client.get_whatsapp_session_by_name(self.session_name)
+        
+        endpoint = f"{self.session_name}/send-message"
+        #url = 'http://localhost:21465/api/test_session/send-message'
+        payload = {
+            "phone": "554999255718",
+            "isGroup": False,
+            "isNewsletter": False,
+            "message": "Hi from WPPConnect 2"
+        }
+        headers = {
+            'accept': '*/*',
+            'Authorization': 'Bearer $2b$10$wuy4_YHe38Wi9Y6H8BNtLOXt6Fj29QOrg_PtkV6L3rVUwr2ohADly',
+            'Content-Type': 'application/json'
+        }
+        #response = await self.api_client.make_request("POST", endpoint, headers, data=body)
+        response = await self.api_client.make_request("POST", endpoint, headers, payload)
+        print(response)
+        print("asdkaskdkaks")
+
+    async def test_send_message(self):
+        await self.send_message("aa", "554999255718")

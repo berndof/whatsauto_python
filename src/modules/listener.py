@@ -24,10 +24,13 @@ class SocketIOClient:
         print("Disconnected from Socket.IO server")
 
     async def on_event(self, event, data):
-        print(f"Received event: {event} with data: {data}")
+        #print(f"Received event: {event} with data: {data}")
         
         if event == "qrCode":
             await self.manager.on_qr_code(event, data)
+            
+        if event == "received-message":
+            await self.manager.on_received_message(event, data)
 
     async def start(self):
         print("startando")
