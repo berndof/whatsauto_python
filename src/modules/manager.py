@@ -3,7 +3,7 @@ from modules.database import DatabaseClient
 from modules import models
 from modules.listener import SocketIOClient
 import asyncio
-
+## manager.py
 class Manager():
     def __init__(self):
         
@@ -11,8 +11,13 @@ class Manager():
         self.SECRET_KEY = "Sccint002" 
         
         self.api_client = ApiClient(self.API_URL)
-        self.socket_io_client = SocketIOClient("http://localhost:21465")
+        self.socket_io_client = SocketIOClient("http://localhost:21465", self)
         
+        self.qr_code_received = asyncio.Event()
+    
+    async def on_qr_code(self, event, data):
+        print(f"Received qrCode event: {event} with data: {data}")
+        self.qr_code_received.set()
     
     async def _set_database(self, environment):    
         self.db_client = DatabaseClient(environment)
@@ -58,14 +63,12 @@ class Manager():
         
         #here i need to wait for a qrCode event of listener.py
         print("wait for event qrCode")
+        await self.qr_code_received.wait()
+        print("aconteceu caralho")
 
-        
         return
 
-    async def on_qr_code_event(self, data):
-        # Handle QR code event from listener
-        print("Received QR code event")
-        # Set event flag
-        self.socket_io_client.qr_code_event.set()
-        
+    async def on_qr_code(self, event, data):
+        print(f"Received qrCode event: {event} with data: {data}")
+        self.qr_code_received.set()
         

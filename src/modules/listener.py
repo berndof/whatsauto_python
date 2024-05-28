@@ -3,9 +3,10 @@ import asyncio
 import socketio
 
 class SocketIOClient:
-    def __init__(self, url):
+    def __init__(self, url, manager):
         self.sio = socketio.AsyncClient()
         self.url = url
+        self.manager = manager
 
     async def connect(self):
         await self.sio.connect(self.url)
@@ -25,6 +26,8 @@ class SocketIOClient:
     async def on_event(self, event, data):
         print(f"Received event: {event} with data: {data}")
         
+        if event == "qrCode":
+            await self.manager.on_qr_code(event, data)
 
     async def start(self):
         print("startando")
