@@ -58,11 +58,7 @@ class Manager():
         
         #here i need to wait for a qrCode event of listener.py
         print("wait for event qrCode")
-        await self.socket_io_client.wait_for_qr_code_event()
-        #wait for qrCode evenet to be received
 
-        
-        print("aasdashdashd")
         
         return
 

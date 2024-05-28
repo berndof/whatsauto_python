@@ -11,7 +11,10 @@ class SocketIOClient:
         await self.sio.connect(self.url)
 
     async def listen(self):
-        await self.sio.wait()
+        try:
+            await self.sio.wait()
+        except Exception as e:
+            print(f"Error listening to events: {e}")
 
     async def on_connect(self):
         print("Connected to Socket.IO server")
@@ -30,5 +33,5 @@ class SocketIOClient:
         self.sio.on("connect", self.on_connect)
         self.sio.on("disconnect", self.on_disconnect)
         self.sio.on("*", self.on_event)  # Listen to all events
-        await self.listen()
+        asyncio.create_task(self.listen())
         print("caralho")
