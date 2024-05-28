@@ -76,6 +76,10 @@ class Manager():
         endpoint = f"{session_name}/status-session"
         headers = {"Authorization": f"Bearer {exists_session.token}"}    
 
+        #make request 
+        #wait for specific event 
+
+
         status = None
         
         max_retries = 10
