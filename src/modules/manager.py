@@ -1,56 +1,47 @@
 from modules.api_client import ApiClient
 from modules.database import DatabaseClient
 from modules import models
+from modules.listener import SocketIOClient
 import asyncio
-
 
 class Manager():
     def __init__(self):
-        self.API_URL = "http://10.4.0.5:21465/api"
+        
+        self.API_URL = "http://localhost:21465/api"
         self.SECRET_KEY = "Sccint002" 
+        
         self.api_client = ApiClient(self.API_URL)
+        self.socket_io_client = SocketIOClient("http://localhost:21465")
+        
     
     async def _set_database(self, environment):    
         self.db_client = DatabaseClient(environment)
-        await self.db_client.create_all()
-    
-    async def _close_database_connector(self):
-        await self.db_client.close()
-    
-    async def create_session(self, session_name):
-        #check if session already exists
-        #TODO
-        exist_session = False
+        return await self.db_client.create_all()
         
-        #do api call to create session
-        if exist_session:
-            return False
-            #TODO raise exception ?
-            
-        ## TODO MAYBE add request body waitQrCode = false
+    async def generate_token(self, session_name):
+        print("gerando token")
+        #TODO check if session already exists
+        exist_session = False
+        if exist_session: return False #raise exception ?
+        
+        #generate token
         endpoint = f"{session_name}/{self.SECRET_KEY}/generate-token"
         response = await self.api_client.make_request("POST", endpoint)
-
-        if not response:
-            return False
-            #TODO raise exception?
-                
-        #TODO implement logging
         print(response)
+        if not response: return False #raise exception?
+                
+        print(f"response: {response}")
         
-        if not response["status"] == "success":
-            return False
+        if not response["status"] == "success": return False #raise exception?
 
         token = response["token"]
         status = "TOKEN_GENERATED"
         
-        #create a whatsappSession Object to store on database
+        #create a whatsappSession Object
         whatsapp_session = models.WhatsappSession(name=session_name, token=token, status=status)
-        
-        #call database to store token/session_name and status
         await self.db_client.insert_whatsapp_session(whatsapp_session)        
 
-        return
+        return True
 
     async def start_session(self, session_name):
         #check if session already exists
@@ -59,56 +50,26 @@ class Manager():
         #checkin in database
         exists_session = await self.db_client.get_whatsapp_session_by_name(session_name)
 
-        if not exists_session:
-            return None
-            #TODO raise error
-            
-        if not exists_session.status == "TOKEN_GENERATED":
-            return None
-            #TODO raise error
+        if not exists_session: return None #raise exception?
         
-        print(exists_session)
-        #<Session(id=2, name=test_sesssion, token=$2b$10$v1G.A9z27odQFGe2RQezW.t_kOwbNnQaRGxBDaq2mAj8Pn6aIoXsO)>
+        endpoint = f"{session_name}/start-session"
+        headers = {"Authorization": f"Bearer {exists_session.token}"}
+        response = await self.api_client.make_request("POST", endpoint, headers)
         
-        #if exists, check on api to confirm status is disconnected
-        #TODO
+        #here i need to wait for a qrCode event of listener.py
+        print("wait for event qrCode")
+        await self.socket_io_client.wait_for_qr_code_event()
+        #wait for qrCode evenet to be received
+
         
-        endpoint = f"{session_name}/status-session"
-        headers = {"Authorization": f"Bearer {exists_session.token}"}    
-
-        #make request 
-        #wait for specific event 
-
-
-        status = None
+        print("aasdashdashd")
         
-        max_retries = 10
-        attempt = 0
-        status = None
+        return
 
-        # CLOSED -> INITIALIZING -> CLOSED -> QRCODE
-
-
-        while status != "QRCODE" and attempt < max_retries:
-            try:
-                response = await self.api_client.make_request("GET", endpoint, headers=headers)
-                if not response:
-                    attempt += 1
-                    continue
-                status = response["status"]
-                print(response)
-            except Exception as e:
-                print(f"Encountered an error: {e}")
-                attempt += 1
-            await asyncio.sleep(1)
-
-        if attempt >= max_retries:
-            raise Exception("Max retries reached. QR Code not received.")
-
-        if status == "QRCODE":
-            qr_data = response["urlcode"]
-            print(qr_data)
-            input("Press Enter to stop...")
-                
+    async def on_qr_code_event(self, data):
+        # Handle QR code event from listener
+        print("Received QR code event")
+        # Set event flag
+        self.socket_io_client.qr_code_event.set()
         
         

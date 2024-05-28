@@ -6,7 +6,7 @@ class ApiClient():
         self.session = aiohttp.ClientSession()
         
     async def make_request(self, method, endpoint, headers=None, data=None):
-        
+        print(f"making request, method: {method}, endpoint: {endpoint}, headers: {headers}, data: {data}")
         if not endpoint:
             return None
             #raise a exception TODO

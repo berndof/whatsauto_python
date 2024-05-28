@@ -21,14 +21,14 @@ class SocketIOClient:
 
     async def on_event(self, event, data):
         print(f"Received event: {event} with data: {data}")
-        # Call the callback function with the event and data
-        if self.callback:
-            await self.callback(event, data)
+        
 
-    async def start(self, callback):
-        self.callback = callback
+    async def start(self):
+        print("startando")
         await self.connect()
+        print("conectado")
         self.sio.on("connect", self.on_connect)
         self.sio.on("disconnect", self.on_disconnect)
         self.sio.on("*", self.on_event)  # Listen to all events
         await self.listen()
+        print("caralho")
