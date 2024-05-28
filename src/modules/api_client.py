@@ -21,6 +21,3 @@ class ApiClient():
             async with self.session.get(f"{self.API_URL}/{endpoint}", headers=headers, json=data) as response:
                 return await response.json()
     
-    async def send_message(self, url, headers, payload):
-        async with self.session.post(url, headers=headers, json=payload) as response:
-            return await response.json()

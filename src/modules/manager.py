@@ -119,22 +119,17 @@ class Manager():
         exists_session = await self.db_client.get_whatsapp_session_by_name(self.session_name)
         
         endpoint = f"{self.session_name}/send-message"
-        #url = 'http://localhost:21465/api/test_session/send-message'
-        payload = {
-            "phone": "554999255718",
+        body = {
+            "phone": f"{phone}",
             "isGroup": False,
             "isNewsletter": False,
-            "message": "Hi from WPPConnect 2"
+            "message": f"{message}"
         }
         headers = {
             'accept': '*/*',
             'Authorization': 'Bearer $2b$10$wuy4_YHe38Wi9Y6H8BNtLOXt6Fj29QOrg_PtkV6L3rVUwr2ohADly',
             'Content-Type': 'application/json'
         }
-        #response = await self.api_client.make_request("POST", endpoint, headers, data=body)
-        response = await self.api_client.make_request("POST", endpoint, headers, payload)
+        response = await self.api_client.make_request("POST", endpoint, headers, body)
         print(response)
-        print("asdkaskdkaks")
-
-    async def test_send_message(self):
-        await self.send_message("aa", "554999255718")
+        #check if sucess and etc TODO

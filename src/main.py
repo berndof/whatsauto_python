@@ -6,10 +6,8 @@ async def main():
     #
     await manager._set_database("dev")
     #print("passei daqui ")
-    #await manager.socket_io_client.start()
+    await manager.socket_io_client.start()
     #print("Started listener")
-
-    await manager.test_send_message()
 
     # Test generate_token and start_session
     #await manager.generate_token("test_session")
