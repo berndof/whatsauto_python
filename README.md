@@ -6,3 +6,5 @@ Received event: received-message with data: {'response': {'id': 'false_554991040
         'mediaData': {}
     }
 }
+
+https://medium.com/codex/developing-asynchronous-apis-with-fastapi-5c1bb848649e
