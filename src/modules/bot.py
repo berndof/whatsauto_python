@@ -21,10 +21,10 @@ class Bot(object):
         self.manager = manager
         self.env = environment
         self.dev_phone = "554999564665"
-        self.queues = self.build_queueus()
+        self.queues = self.__build_queues()
         self.chats = []
         
-    def build_queueus(self):
+    def __build_queues(self):
         return [Queue("teste", "ola bem vindo a fila teste"), Queue("testando", "ola bem vindo a fila testando")]
         
     def get_greetings_message(self):
@@ -47,8 +47,16 @@ class Bot(object):
             logging.debug("ignoring message from other phone on dev environment")
             return 
         
-        chat = Chat("dev", phone=sender_phone)
-        
+        chat = next((chat for chat in self.chats if chat.phone == sender_phone), None)
+
+        if chat is None:
+            # Create a new chat object if it doesn't exist
+            chat = Chat(sender_phone)
+            self.chats.append(chat)
+            
+        logging.info(f"Processing message from {sender_phone}")
+
+
         
         """ if chat in self.chats:
             logging.info(f"Chat {sender_phone} already exists")
