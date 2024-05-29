@@ -3,10 +3,10 @@ from modules.database import DatabaseClient
 from modules import models
 from modules.socket_client import SocketIOClient
 import asyncio
-import qrcode
 import logging
 from modules.api_server import FastAPIServer
-
+from typing import Tuple
+from bot import Bot
 
 
 ## manager.py
@@ -16,14 +16,16 @@ class Manager(object):
         self.API_HOST = api_host
         self.SECRET_KEY = secret_key
         self.SESSION_NAME = session_name
-        self.TOKEN:str 
-        self.STATUS:str
+        self.SESSION_TOKEN= "" 
+        self.SESSION_STATUS= ""
         
         self.api_client = ApiClient(self.API_HOST)
         self.socket_client = SocketIOClient(self.API_HOST, self)
         
         self.api_server = FastAPIServer(self)
-        self.qr_code_received = asyncio.Event()      
+        self.qr_code_received = asyncio.Event()
+        
+        
     
     async def start(self, environment:str) -> None:
         logging.info(f"starting manager env={environment}")
@@ -36,72 +38,90 @@ class Manager(object):
         else:
             raise ValueError
         
-    async def generate_token(self) -> str:
+    async def get_session_token(self) -> Tuple[str, bool, str]:
     
+        if self.SESSION_TOKEN != "":
+            generated = False
+            return self.SESSION_TOKEN, generated, self.SESSION_STATUS
+        
+
         endpoint = f"{self.SESSION_NAME}/{self.SECRET_KEY}/generate-token"
         response = await self.api_client.make_request("POST", endpoint)
         logging.info(response)
+        
         if not response: raise NotImplementedError
-                
         if not response["status"] == "success": raise NotImplementedError
 
-        self.TOKEN = response["token"]
-        self.STATUS = "CREATED"
-        
+        self.SESSION_TOKEN = response["token"]
+        self.SESSION_STATUS = "CREATED"
+        generated = True
         #deprecated since i will work with 1 session only
         #create a whatsappSession Object 
         #whatsapp_session = models.WhatsappSession(name=session_name, token=token, status=status)
         #await self.db_client.insert_whatsapp_session(whatsapp_session)        
 
-        return self.TOKEN
+        return self.SESSION_TOKEN, generated, self.SESSION_STATUS
 
-    async def start_session(self):
+    async def get_session_status(self):
+        endpoint = f"{self.SESSION_NAME}/status-session"
+        headers = {"Authorization": f"Bearer {self.SESSION_TOKEN}"}
+        response = await self.api_client.make_request("GET", endpoint, headers)
+        return response
+        
+
+    async def start_session(self) -> Tuple[str, str]:
+        
+        if not self.SESSION_STATUS == "CREATED":
+            raise NotImplementedError
         
         endpoint = f"{self.SESSION_NAME}/start-session"
-        headers = {"Authorization": f"Bearer {self.TOKEN}"}
+        headers = {"Authorization": f"Bearer {self.SESSION_TOKEN}"}
         response = await self.api_client.make_request("POST", endpoint, headers)
         logging.info(response)
         
-        #DONT NEED MORE BUT ITS WORKING
-        #here i need to wait for a qrCode event of listener.py
-        """ print("wait for event qrCode")
-        await self.qr_code_received.wait()
+        self.SESSION_STATUS = "WAITING"
+        is_loged = False
         
-        if self.data["session"] == session_name:
-            print("make request to get qr_data") """
+        while self.SESSION_STATUS != "QRCODE" and not is_loged:
+            response = await self.get_session_status()
+            status = response["status"] 
+            if status == "QRCODE":
+                self.SESSION_STATUS = status
+            if status == "CONNECTED":
+                is_loged = True
+                self.SESSION_STATUS = status 
+            await asyncio.sleep(5)
+
+        qr_data = None
+        if not is_loged:
+            qr_data = response["urlcode"]
+            
+            # set a trigger to listen for event of session logged in
+            self.wait_scan_confirm_event = True
+            
+        return self.SESSION_STATUS, qr_data
+
+    
+    async def on_session_loged(self, event, data):
+
+        if self.wait_scan_confirm_event:
+            # se o trigger for acionado
+            logging.info("")
+            self.SESSION_STATUS = "CONNECTED"
+            pass
         
-        status = "CLOSED"
-        endpoint = f"{self.SESSION_NAME}/status-session"
         
-        while status != "QRCODE":
-            response = await self.api_client.make_request("GET", endpoint, headers)
-            if not response:
-                continue
-            status = response["status"]
-            await asyncio.sleep(1)
-
-        qr_data = response["urlcode"]
-        
-        self._build_qr(qr_data)
-
-        #await confirmation of login 
-        #Received event: session-logged with data: {'status': True, 'session': 'test_session'}
-
-        return
-
     async def on_received_message(self, event, data):
-        #check if event is the right one
+        
         response = data["response"]
-        try: 
-            content = response["content"]
-            sender = response["sender"]
-            sender_phone = sender["id"].split('@')[0]
-            
-            if content.lower() == "ping":
-                await self.send_message("pong", sender_phone)
-            
-        except Exception as e:
-            print(e)
+        message = response["content"]
+        
+        if message.lower() == "ping":
+            await self.send_message("pong", response["sender"]["id"].split('@')[0])
+        
+        #send message to automations
+        else:
+            start_chat_triage
         
             
     async def send_message(self, message:str, phone:str) -> None:

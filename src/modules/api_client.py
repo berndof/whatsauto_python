@@ -4,9 +4,6 @@ import logging
 class ApiClient():
     def __init__(self, host_url):
         self.API_URL = f"{host_url}"
-        #self.session = aiohttp.ClientSession()
-        
-    #async def make_request(self, method, endpoint, headers=None, data=None):
         
     async def make_request(self, method, endpoint, headers=None, data=None):
             async with aiohttp.ClientSession() as session:

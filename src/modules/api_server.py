@@ -22,10 +22,22 @@ class FastAPIServer:
 
     async def _setup_routes(self):
         
-        @self.app.post("/generate-token")
-        async def generate_token():
-            token = await self.manager.generate_token()
-            return {"token": token}
+        @self.app.get("/session-token")
+        async def get_session_token():
+            token, generated, status = await self.manager.get_session_token()
+            return {
+                "session_token": token,
+                "isGenerated": generated,
+                "session_status": status,
+            }
+            
+        @self.app.post("/start-session")
+        async def start_session():
+            status, qr_data = await self.manager.start_session()
+            return {
+                "qr_data":qr_data,
+                "session_status": status,
+            }
 
     async def run(self, host:str, port:int):
         import uvicorn

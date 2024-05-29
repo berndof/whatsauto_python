@@ -6,7 +6,8 @@ import logging
 class SocketIOClient:
     event_mapper = {
         #event:method on manager
-        "received-message": "on_received_message"
+        #"received-message": "on_received_message"
+        "session-logged": "on_session_loged"
     }
     
     def __init__(self, url:str, manager) -> None:
@@ -31,13 +32,15 @@ class SocketIOClient:
         logging.info(f"disconnected of socket on {self.url}")
 
     async def on_event(self, event, data):
-        logging.info(f"#####\nevent recieved: {event}\n data: {data}#####\n")
+        logging.info(f"#####\nevent recieved: {event}\n#####\n")
             
-        method_name = self.event_mapper.get(event)
-        if method_name:
+        try:
+            method_name = self.event_mapper.get(event)
             logging.debug(f"calling method {method_name} on manager")
             method = getattr(self.manager, method_name)
             await method(event, data)
+        except:
+            pass
 
     async def start(self):
         await self.connect()
