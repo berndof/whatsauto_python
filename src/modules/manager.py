@@ -5,9 +5,12 @@ from modules.socket_client import SocketIOClient
 import asyncio
 import qrcode
 import logging
+from modules.api_server import FastAPIServer
+
+
 
 ## manager.py
-class Manager():
+class Manager(object):
     def __init__(self, api_host:str, secret_key:str, session_name:str) -> None:
         
         self.API_HOST = api_host
@@ -19,20 +22,23 @@ class Manager():
         self.api_client = ApiClient(self.API_HOST)
         self.socket_client = SocketIOClient(self.API_HOST, self)
         
-        self.qr_code_received = asyncio.Event()        
+        self.api_server = FastAPIServer(self)
+        self.qr_code_received = asyncio.Event()      
     
     async def start(self, environment:str) -> None:
         logging.info(f"starting manager env={environment}")
         if environment == "dev" or environment == "prod":
+        
             self.db_client = DatabaseClient(environment)
             await self.db_client.create_all()
+            
             return 
         else:
             raise ValueError
         
-    async def generate_token(self):
+    async def generate_token(self) -> str:
     
-        endpoint = f"/{self.SESSION_NAME}/{self.SECRET_KEY}/generate-token"
+        endpoint = f"{self.SESSION_NAME}/{self.SECRET_KEY}/generate-token"
         response = await self.api_client.make_request("POST", endpoint)
         logging.info(response)
         if not response: raise NotImplementedError
@@ -49,19 +55,12 @@ class Manager():
 
         return self.TOKEN
 
-    async def start_session(self, session_name:str):
-        #check if session already exists
-        #in database or in api?
+    async def start_session(self):
         
-        #checkin in database
-        exists_session = await self.db_client.get_whatsapp_session_by_name(session_name)
-
-        if not exists_session: return None #raise exception?
-        
-        endpoint = f"{session_name}/start-session"
-        headers = {"Authorization": f"Bearer {exists_session.token}"}
+        endpoint = f"{self.SESSION_NAME}/start-session"
+        headers = {"Authorization": f"Bearer {self.TOKEN}"}
         response = await self.api_client.make_request("POST", endpoint, headers)
-        print(response)
+        logging.info(response)
         
         #DONT NEED MORE BUT ITS WORKING
         #here i need to wait for a qrCode event of listener.py
@@ -72,7 +71,7 @@ class Manager():
             print("make request to get qr_data") """
         
         status = "CLOSED"
-        endpoint = f"{session_name}/status-session"
+        endpoint = f"{self.SESSION_NAME}/status-session"
         
         while status != "QRCODE":
             response = await self.api_client.make_request("GET", endpoint, headers)
@@ -89,10 +88,6 @@ class Manager():
         #Received event: session-logged with data: {'status': True, 'session': 'test_session'}
 
         return
-
-    async def temp_test(self):
-        print("alo")
-        await asyncio.sleep(1)
 
     async def on_received_message(self, event, data):
         #check if event is the right one
