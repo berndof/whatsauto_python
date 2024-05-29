@@ -1,10 +1,9 @@
-Received event: received-message with data: {'response': {'id': 'false_554991040519@c.us_1896FA27DC7144C4D8B9B333C5CF65DA', 'viewed': False, 'body': 'tá virado né', 'type': 'chat', 't': 1716906816, 'notifyName': 'Fran Rafaeli', 'from': '554991040519@c.us', 'to': '554999564665@c.us', 'ack': 1, 'invis': False, 'isNewMsg': True, 'star': False, 'kicNotified': False, 'recvFresh': True, 'isFromTemplate': False, 'pollInvalidated': False, 'isSentCagPollCreation': False, 'latestEditMsgKey': None, 'latestEditSenderTimestampMs': None, 'mentionedJidList': [], 'groupMentions': [], 'isEventCanceled': False, 'isVcardOverMmsDocument': False, 'isForwarded': False, 'labels': [], 'hasReaction': False, 'productHeaderImageRejected': False, 'lastPlaybackProgress': 0, 'isDynamicReplyButtonsMsg': False, 'isCarouselCard': False, 'parentMsgId': None, 'isMdHistoryMsg': False, 'stickerSentTs': 0, 'isAvatar': False, 'lastUpdateFromServerTs': 0, 'invokedBotWid': None, 'bizBotType': None, 'botResponseTargetId': None, 'botPluginType': None, 'botPluginReferenceIndex': None, 'botPluginSearchProvider': None, 'botPluginSearchUrl': None, 'botPluginMaybeParent': False, 'botReelPluginThumbnailCdnUrl': None, 'botMsgBodyType': None, 'requiresDirectConnection': None, 'bizContentPlaceholderType': None, 'hostedBizEncStateMismatch': False, 'senderOrRecipientAccountTypeHosted': False, 'placeholderCreatedWhenAccountIsHosted': False, 'chatId': '554991040519@c.us', 'fromMe': False, 'sender': {'id': '554991040519@c.us', 'name': 'Fran', 'shortName': 'Fran', 'pushname': 'Fran Rafaeli', 'type': 'in', 'verifiedName': 'Fran Rafaeli', 'isBusiness': True, 'isEnterprise': False, 'isSmb': True, 'verifiedLevel': 0, 'privacyMode': None, 'labels': [], 'isContactSyncCompleted': 1, 'textStatusLastUpdateTime': -1, 'formattedName': 'Fran', 'isMe': False, 'isMyContact': True, 'isPSA': False, 'isUser': True, 'isWAContact': True, 'profilePicThumbObj': {'eurl': 'https://pps.whatsapp.net/v/t61.24694-24/439320088_2027469450983479_5439354668241935599_n.jpg?ccb=11-4&oh=01_Q5AaIAD0eN3_MmrVJSbiMP1yCUNzCaQDMFfQjXQ_3c6MOkDG&oe=6663012F&_nc_sid=e6ed6c&_nc_cat=106', 'id': '554991040519@c.us', 'img': 'https://pps.whatsapp.net/v/t61.24694-24/439320088_2027469450983479_5439354668241935599_n.jpg?stp=dst-jpg_s96x96&ccb=11-4&oh=01_Q5AaIBvWbuxni58mee2O8SmNq7G0cC0HOQRbjpYc8hO0p2kL&oe=6663012F&_nc_sid=e6ed6c&_nc_cat=106', 'imgFull': 'https://pps.whatsapp.net/v/t61.24694-24/439320088_2027469450983479_5439354668241935599_n.jpg?ccb=11-4&oh=01_Q5AaIAD0eN3_MmrVJSbiMP1yCUNzCaQDMFfQjXQ_3c6MOkDG&oe=6663012F&_nc_sid=e6ed6c&_nc_cat=106', 'tag': '1714609318'}, 
-    'msgs': None},
-        'timestamp': 1716906816,
-        content': 'tá virado né',
-        'isGroupMsg': False,
-        'mediaData': {}
-    }
-}
+# README
 
-https://medium.com/codex/developing-asynchronous-apis-with-fastapi-5c1bb848649e
+I'm building this to be an automation framework for whastapp using whatsapp web js as a way to interact with the browser.
+
+In fact I use an implementation of whatsapp web js, the wppconnect (server)[https://wppconnect.io/pt-BR/docs/wppconnect-server] it creates a rest api and a socket to control whatsapp,
+
+I'm still organizing the documentation but I believe the code is easy to understand.
+
+updates coming soon!
