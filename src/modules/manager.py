@@ -87,7 +87,6 @@ class Manager(object):
         endpoint = f"{self.SESSION_NAME}/start-session"
         headers = {"Authorization": f"Bearer {self.SESSION_TOKEN}"}
         response = await self.api_client.make_request("POST", endpoint, headers)
-        logging.info(response)
         
         self.SESSION_STATUS = "WAITING"
         
@@ -110,15 +109,17 @@ class Manager(object):
 
         if self.wait_scan_confirm_event:
             # se o trigger for acionado
-            logging.info("")
+            logging.info("wait_scan event triggered")
             self.SESSION_STATUS = "CONNECTED"
             pass
         
     async def on_received_message(self, event, data):
         
         response = data["response"]
+        logging.info (f"message received: {response}")
+        
         message = response["content"]
-        print(message)
+
         #send message to automations
         #else:
         if message != "":
@@ -139,5 +140,5 @@ class Manager(object):
             'Content-Type': 'application/json'
         }
         response = await self.api_client.make_request("POST", endpoint, headers, body)
-        print(response)
+        #print(response)
         #check if sucess and etc TODO

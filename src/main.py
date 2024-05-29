@@ -21,8 +21,7 @@ async def main():
     await manager.start(environment) #set db, start the consumer ...
     await manager.socket_client.start() #socketio client
     await manager.api_server.start()
-            
-
+    
     # Keep the event loop running 
     # TODO i think this loop can be replaced for some async loop function
     while True:
