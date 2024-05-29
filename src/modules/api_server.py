@@ -22,14 +22,14 @@ class FastAPIServer:
 
     async def _setup_routes(self):
         
-        @self.app.get("/session-token")
+        """ @self.app.get("/session-token")
         async def get_session_token():
             token, generated, status = await self.manager.get_session_token()
             return {
                 "session_token": token,
                 "isGenerated": generated,
                 "session_status": status,
-            }
+            } """
             
         @self.app.post("/start-session")
         async def start_session():

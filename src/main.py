@@ -1,7 +1,6 @@
 import asyncio
 from modules.manager import Manager
 import logging
-from fastapi import FastAPI
 
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -15,6 +14,7 @@ fastapi_port = "8000"
 fastapi_host = "0.0.0.0"
 
 manager = Manager(api_host, secret_key, session_name) 
+#PASSAR O BOT AQUI
 
 async def main():
     

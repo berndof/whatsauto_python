@@ -6,7 +6,7 @@ import logging
 class SocketIOClient:
     event_mapper = {
         #event:method on manager
-        #"received-message": "on_received_message"
+        "received-message": "on_received_message",
         "session-logged": "on_session_loged"
     }
     
