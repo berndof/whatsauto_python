@@ -33,6 +33,7 @@ class Manager(object):
         logging.info(f"starting manager env={environment}")
         
         self.bot = Bot(self, environment)
+        self.SESSION_TOKEN = await self.get_session_token()
         
         if environment == "dev" or environment == "prod":
         
@@ -140,5 +141,5 @@ class Manager(object):
             'Content-Type': 'application/json'
         }
         response = await self.api_client.make_request("POST", endpoint, headers, body)
-        #print(response)
+        print(response)
         #check if sucess and etc TODO

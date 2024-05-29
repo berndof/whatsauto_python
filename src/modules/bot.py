@@ -24,11 +24,14 @@ class Bot(object):
         self.queues = self.__build_queues()
         self.chats = []
         
+    async def __add_chat_to_queue(self, chat, queue):
+        chat.queue = queue
+        await self.manager.send_message(queue.first_message, chat.phone)
+        
     def __build_queues(self):
         return [Queue("teste", "ola bem vindo a fila teste"), Queue("testando", "ola bem vindo a fila testando")]
         
-    def get_greetings_message(self):
-        
+    def __get_greetings_message(self):
         message = f"ola, bem vindo a central de atendimento, selecione uma fila\n"
         for i, queue in enumerate(self.queues):
             message += f"{i+1} - {queue.name}\n" 
@@ -54,35 +57,27 @@ class Bot(object):
             chat = Chat(sender_phone)
             self.chats.append(chat)
             
-        logging.info(f"Processing message from {sender_phone}")
-
-
-        
-        """ if chat in self.chats:
-            logging.info(f"Chat {sender_phone} already exists")
-            chat = self.chats[self.chats.index(chat)]
-        else:
-            logging.info(f"Chat {sender_phone} added")
-            self.chats.append(chat)
-    
-        if not chat.queue:
-            if chat.waitign_queue_response:
-                if content in ["1", "2"]: ## if message is a queue index
-                    chat.waitign_queue_response = False
-                    chat.queue = self.queues[int(content)-1]
-                    self.manager.send_message(self.chat.queue.first_message, self.chat.phone)
-
-                    
+            
+        #se não tem nenhuma fila atribuida manda a mensagem para seleção da fila
+        if not chat.queue and not chat.waitign_queue_response:
             await self.send_select_queue_message(chat)
-        else:
-            print("chat already have a queue") """
-        
+        elif not chat.queue and chat.waitign_queue_response:
+            ## TODO improve this
+            if content == "1":
+                await self.__add_chat_to_queue(chat, self.queues[0])
+            elif content == "2":
+                await self.__add_chat_to_queue(chat, self.queues[1])
+            else:
+                await self.manager.send_message("por favor escolha uma fila para iniciarmos o atendimento", sender_phone)
+                await self.send_select_queue_message(chat)
+          
+        logging.info(f"Processing message from {sender_phone}")
 
     
     async def send_select_queue_message(self, chat:Chat):
         logging.info(f"Sending select queue message to chat {chat.phone}")
         
-        select_queue_message = self.get_greetings_message()
-        self.chat.waitign_queue_response = True
+        select_queue_message = self.__get_greetings_message()
+        chat.waitign_queue_response = True
         
         await self.manager.send_message(select_queue_message, chat.phone)
