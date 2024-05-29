@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+
 """ 
 @app.post()
 @app.put()
@@ -12,7 +13,8 @@ app = FastAPI()
 @app.trace()a
 """
 
-@app.get("/")
-async def root():
-    print("hello")
-    return {"message": "Hello World"}
+@app.post("/start-session")
+async def start_session():
+    manager = app.manager
+    await manager.temp_test()
+    
