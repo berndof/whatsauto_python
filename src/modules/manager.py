@@ -1,51 +1,63 @@
-from modules.api_client import ApiClient
-from modules.database import DatabaseClient
-from modules import models
-from modules.socket_client import SocketIOClient
 import asyncio
 import logging
-from modules.api_server import FastAPIServer
 from typing import Tuple
-from modules.bot import Bot
 import aiofiles
 import os
-import json
 
-## manager.py
+class Session(object):
+    def __init__(self, name:str, token:str|None) -> None:
+        logging.info(f"init session: name={name}, token={token}")
+        
+        self.name = name
+        #TODO checar se a sessão não esta salva no arquivo para buscar o token
+        self.token = token
+        
+        self.status = "CLOSED"
+
 class Manager(object):
-    def __init__(self, api_host:str, secret_key:str, session_name:str) -> None:
+    def __init__(self, config:dict) -> None:
         
-        self.API_HOST = api_host
-        self.SECRET_KEY = secret_key
-        self.SESSION_NAME = session_name
-        self.SESSION_TOKEN = None
-        self.SESSION_STATUS = None
+        self.__setup_services(config)
         
-        self.api_client = ApiClient(self.API_HOST)
-        self.socket_client = SocketIOClient(self.API_HOST, self)
+        # GENERAL ATTRIBUTES
+        self.SECRET_KEY = config["secret_key"]
         
-        self.api_server = FastAPIServer(self)
+        #create session without token
+        self.session = Session(config["session_name"], None)    
+        
+        #Trigger events   TODO tirar daqui
         self.qr_code_received = asyncio.Event()
         
-        self.session_token_file = "session_token.txt"
-    
-    async def start(self, environment:str) -> None:
-        logging.info(f"starting manager env={environment}")
+    def __setup_services(self, config:dict):
+        # wpp api client
+        from modules.services.wpp_api_client import WPPApiClient
+        self.wpp_api_client = WPPApiClient(config["api_host"])
         
-        self.bot = Bot(self, environment)
-        self.SESSION_TOKEN = await self.get_session_token()
+        #wpp socket client
+        from modules.services.wpp_socket_client import WPPSocketIOClient
+        self.wpp_socket_client = WPPSocketIOClient(config["api_host"], self)
         
-        if environment == "dev" or environment == "prod":
+        #fastapi server
+        from modules.services.fastapi_server import FastAPIServer
+        self.fastapi_server = FastAPIServer(self, config["fastapi_host"], config["fastapi_port"])
         
-            self.db_client = DatabaseClient(environment)
-            await self.db_client.create_all()
+        #database client
+        database_config = config["database"]
+        from modules.services.database_client import DatabaseClient
+        self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
+        
+    async def start(self) -> None:        
+
+            await self.db_client.start()
+            await self.fastapi_server.start()
+            await self.wpp_socket_client.start()
+            await self.db_client.start()
             
-            return 
-        else:
-            raise ValueError
+            #self.session.token = await self.wpp_api_client.get_session_token()
+            
+
         
     async def get_session_token(self) -> Tuple[str, bool, str]:
-        
         if os.path.exists(self.session_token_file):
             async with aiofiles.open(self.session_token_file, "r") as f:
                 data = await f.read()

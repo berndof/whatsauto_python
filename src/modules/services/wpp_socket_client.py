@@ -1,9 +1,9 @@
-# socket_io_client.py
+# wpp_socket_client.py
 import asyncio
 import socketio
 import logging
 
-class SocketIOClient:
+class WPPSocketIOClient:
     event_mapper = {
         #event:method on manager
         "received-message": "on_received_message",
@@ -32,12 +32,12 @@ class SocketIOClient:
         logging.info(f"disconnected of socket on {self.url}")
 
     async def on_event(self, event, data):
-        logging.info(f"#####\nevent recieved: {event}\n#####\n")
-            
+        logging.info(f"event recieved: {event}")
         try:
+            #busca no event mapper o nome da função para chamar no manager 
             method_name = self.event_mapper.get(event)
-            logging.debug(f"calling method {method_name} on manager")
             method = getattr(self.manager, method_name)
+            logging.debug(f"calling method {method_name} on manager")
             await method(event, data)
         except:
             pass
