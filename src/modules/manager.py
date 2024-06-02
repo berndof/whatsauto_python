@@ -1,143 +1,203 @@
-from modules.api_client import ApiClient
-from modules.database import DatabaseClient
-from modules import models
-from modules.socket_client import SocketIOClient
 import asyncio
 import logging
-from modules.api_server import FastAPIServer
 from typing import Tuple
-from modules.bot import Bot
 import aiofiles
 import os
-import json
 
-## manager.py
-class Manager(object):
-    def __init__(self, api_host:str, secret_key:str, session_name:str) -> None:
-        
-        self.API_HOST = api_host
-        self.SECRET_KEY = secret_key
-        self.SESSION_NAME = session_name
-        self.SESSION_TOKEN = None
-        self.SESSION_STATUS = None
-        
-        self.api_client = ApiClient(self.API_HOST)
-        self.socket_client = SocketIOClient(self.API_HOST, self)
-        
-        self.api_server = FastAPIServer(self)
-        self.qr_code_received = asyncio.Event()
-        
-        self.session_token_file = "session_token.txt"
+class SocketTrigger(object):
+    def __init__(self, name:str, event_to_catch:str, on_catch:callable) -> None:
+        self.name = name
+        self.event_to_catch = event_to_catch
+        self.on_catch = on_catch
     
-    async def start(self, environment:str) -> None:
-        logging.info(f"starting manager env={environment}")
+    def set(self):
+        self.on_catch()
+        return
+
+
+
+class WPPSession(object):
+    def __init__(self, name:str, token:str|None, status:str="CLOSED") -> None:
+        logging.info(f"init session: name={name}, token={token}")
         
-        self.bot = Bot(self, environment)
+        self.name = name
+        #TODO checar se a sessão não esta salva no arquivo para buscar o token
+        self.token = token
         
-        if environment == "dev" or environment == "prod":
+        self.status = status
+
+class Manager(object):
+    def __init__(self, config:dict) -> None:
         
-            self.db_client = DatabaseClient(environment)
-            await self.db_client.create_all()
-            
-            return 
-        else:
-            raise ValueError
+        self.__setup_services(config)
         
-    async def get_session_token(self) -> Tuple[str, bool, str]:
+        self.__create_session(config)
+        self.token_file_path = config["token_file_path"]
         
-        if os.path.exists(self.session_token_file):
-            async with aiofiles.open(self.session_token_file, "r") as f:
-                data = await f.read()
+        #*temporary
+        self.dev_phone = config["dev_phone"]
+        
+        self.__get_secret_key(config)
+        
+        self.triggers = []
+        
+    def __setup_services(self, config:dict):
+        # wpp api client
+        from modules.services.wpp_api_client import WPPApiClient
+        self.wpp_api_client = WPPApiClient(config["api_host"])
+        
+        #wpp socket client
+        from modules.services.wpp_socket_client import WPPSocketIOClient
+        self.wpp_socket_client = WPPSocketIOClient(config["api_host"], self)
+        
+        #fastapi server
+        from modules.services.fastapi_server import FastAPIServer
+        self.fastapi_server = FastAPIServer(self, config["fastapi_host"], config["fastapi_port"])
+        
+        #database client
+        database_config = config["database"]
+        from modules.services.database_client import DatabaseClient
+        self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
+        
+    def __create_session(self, config:dict):
+        #check if session and token already saved on file and get token from file
+        token_file_path = config["token_file_path"]
+        logging.debug(f"token_file_path={token_file_path}")
+        if os.path.exists(token_file_path):
+            with open(token_file_path, "r") as f:
+                data = f.read()
                 token, name = data.split(":")
-                if name == self.SESSION_NAME:
-                    self.SESSION_STATUS = "CREATED"
-                    return token
-                else:raise NotImplementedError
-            
-        endpoint = f"{self.SESSION_NAME}/{self.SECRET_KEY}/generate-token"
-        response = await self.api_client.make_request("POST", endpoint)
+                if name == config["session_name"]:
+                    self.session = WPPSession(name=config["session_name"], token=token, status="CREATED")
+                else:
+                    # TODO delete token file
+                    pass       
+        else:
+            self.session = WPPSession(name=config["session_name"], token=None)
         
-        if not response: raise NotImplementedError
-        if not response["status"] == "success": raise NotImplementedError
+    def __get_secret_key(self, config:dict):
+        self.SECRET_KEY = config["secret_key"]
+        
+    async def start(self) -> None:        
+
+            await self.db_client.start()
+            await self.fastapi_server.start()
+            await self.wpp_socket_client.start()
+            await self.wpp_api_client.start()
+
+            if self.session.status == "CLOSED":
+                self.session.token = await self.__get_session_token()
+            
+            #here self.session.status must have to be "CREATED" and a token must be created and stored
+            #then
+            await self.start_session()
+            #here self.session.status must have to be "CONNECTED"
+            await self.send_message("Hello World!")
+            #now i can start the bot
+
+        
+    async def __get_session_token(self) -> Tuple[str, bool, str]:
+            
+        endpoint = f"{self.session.name}/{self.SECRET_KEY}/generate-token"
+        response = await self.wpp_api_client.make_request("POST", endpoint)
+        logging.debug(response)
+        
+        if not response: raise NotImplementedError("response not received")
+        if not response["status"] == "success": raise NotImplementedError("response recived was not success check wpp-server logs")
+        
         token = response["token"]
         
-        self.SESSION_STATUS = "CREATED"
-        self.SESSION_TOKEN = token
+        self.session.status = "CREATED"
+        self.session.token = token
 
         #store token in a file
-        data_to_store=f"{token}:{self.SESSION_NAME}"
-        async with aiofiles.open(self.session_token_file, "w") as f:
+        data_to_store=f"{token}:{self.session.name}"
+        
+        async with aiofiles.open(self.token_file_path, "w") as f:
             await f.write(data_to_store)
         return token 
 
-    async def get_session_status(self):
-        endpoint = f"{self.SESSION_NAME}/status-session"
-        headers = {"Authorization": f"Bearer {self.SESSION_TOKEN}"}
-        response = await self.api_client.make_request("GET", endpoint, headers)
+    async def __get_session_status(self):
+        endpoint = f"{self.session.name}/status-session"
+        headers = {"Authorization": f"Bearer {self.session.token}"}
+        response = await self.wpp_api_client.make_request("GET", endpoint, headers)
         return response
+        
+    async def __create_socket_trigger(self, trigger_name:str, event_to_catch:str, on_catch:callable) -> SocketTrigger:
+        trigger = SocketTrigger(trigger_name, event_to_catch, on_catch)
+        self.triggers.append(trigger)
+        return trigger   
         
     async def start_session(self) -> Tuple[str, str]:
         
-        if not self.SESSION_TOKEN:
-            self.SESSION_TOKEN = await self.get_session_token()
+        endpoint = f"{self.session.name}/start-session"
+        headers = {"Authorization": f"Bearer {self.session.token}"}
+        response = await self.wpp_api_client.make_request("POST", endpoint, headers)
         
-        if self.SESSION_STATUS != "CREATED":
-            return self.SESSION_STATUS, None
+        if response["status"] == "CONNECTED":
+            self.session.status = "CONNECTED"
+        else: self.session.status = "WAITING"
         
-        endpoint = f"{self.SESSION_NAME}/start-session"
-        headers = {"Authorization": f"Bearer {self.SESSION_TOKEN}"}
-        response = await self.api_client.make_request("POST", endpoint, headers)
-        logging.info(response)
-        
-        self.SESSION_STATUS = "WAITING"
-        
-        while self.SESSION_STATUS == "WAITING":
-            response = await self.get_session_status()
+        while self.session.status == "WAITING":
+            response = await self.__get_session_status()
             status = response["status"] 
+            
             if status == "QRCODE":
-                self.SESSION_STATUS = status
+
                 qr_data = response["urlcode"]
+                #TODO send qr_data to frontend for build qr then wait for qr_scan 
+                #by now scan qr from wpp-server console
+                
                 # set a trigger to listen for event of session logged in
-                self.wait_scan_confirm_event = True
+
+                def on_catch(self, event, data):
+                    self.session.status = "CONNECTED"
+                    return
+                
+                await self.__create_socket_trigger('wait_for_qr_scan','session_logged', on_catch)
+                
+            #satys on loop until status is "CONNECTED"
             if status == "CONNECTED":
-                qr_data = None
-                self.SESSION_STATUS = status 
-            await asyncio.sleep(1)
-                        
-        return self.SESSION_STATUS, qr_data
-
-    async def on_session_loged(self, event, data):
-
-        if self.wait_scan_confirm_event:
-            # se o trigger for acionado
-            logging.info("")
-            self.SESSION_STATUS = "CONNECTED"
-            pass
+                break
+                
+            await asyncio.sleep(1) #wait 1 sec to check session status again
+            
+        return 
+    
+    async def on_socket_event(self, event, data):
+        # if event matches with at least one trigger in self.triggers, the event has to be processed
+        #the atribute is trigger.event_to_catch
+        logging.debug(f"event recieved: {event}, data: {data}")
+        event_name = str(event)
         
-    async def on_received_message(self, event, data):
+        #TODO IMPROVE THIS
+        for trigger in self.triggers:
+            if trigger.event_to_catch == event_name:
+                logging.debug(f"trigger {trigger.name} triggered")
+                trigger.set()
+                break
+    
+    #*test method
+    async def send_message(self, message:str) -> None:
         
-        response = data["response"]
-        message = response["content"]
-        print(message)
-        #send message to automations
-        #else:
-        if message != "":
-            await self.bot.on_message(response)
-        
-    async def send_message(self, message:str, phone:str) -> None:
-        
-        endpoint = f"{self.SESSION_NAME}/send-message"
+        endpoint = f"{self.session.name}/send-message"
         body = {
-            "phone": f"{phone}",
+            "phone": f"{self.dev_phone}",
             "isGroup": False,
             "isNewsletter": False,
             "message": f"{message}"
         }
         headers = {
             'accept': '*/*',
-            'Authorization': f'Bearer {self.SESSION_TOKEN}',
+            'Authorization': f'Bearer {self.session.token}',
             'Content-Type': 'application/json'
         }
-        response = await self.api_client.make_request("POST", endpoint, headers, body)
+        response = await self.wpp_api_client.make_request("POST", endpoint, headers, body)
         print(response)
         #check if sucess and etc TODO
+        
+    async def close(self) -> None:
+        await self.db_client.close()
+        await self.fastapi_server.close()
+        await self.wpp_socket_client.close()
+        await self.wpp_api_client.close()#

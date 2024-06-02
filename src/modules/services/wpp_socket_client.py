@@ -1,14 +1,9 @@
-# socket_io_client.py
+# wpp_socket_client.py
 import asyncio
 import socketio
 import logging
 
-class SocketIOClient:
-    event_mapper = {
-        #event:method on manager
-        "received-message": "on_received_message",
-        "session-logged": "on_session_loged"
-    }
+class WPPSocketIOClient:
     
     def __init__(self, url:str, manager) -> None:
         self.sio = socketio.AsyncClient()
@@ -32,15 +27,8 @@ class SocketIOClient:
         logging.info(f"disconnected of socket on {self.url}")
 
     async def on_event(self, event, data):
-        logging.info(f"#####\nevent recieved: {event}\n#####\n")
-            
-        try:
-            method_name = self.event_mapper.get(event)
-            logging.debug(f"calling method {method_name} on manager")
-            method = getattr(self.manager, method_name)
-            await method(event, data)
-        except:
-            pass
+        logging.info(f"event recieved: {event}")
+        await self.manager.on_socket_event(event, data)
 
     async def start(self):
         await self.connect()
