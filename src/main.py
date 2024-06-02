@@ -40,9 +40,10 @@ async def main():
     await manager.start() #set db, start the consumer ..
     
     # Keep the event loop running 
-    # TODO i think this loop can be replaced for some async loop function
-    while True:
-        await asyncio.sleep(1)
+    # TODO i think this loop can be replaced for some async loop function like run forever
+    
+    """while True:
+        await asyncio.sleep(1)"""
         
 if __name__ == "__main__":
     
@@ -51,4 +52,9 @@ if __name__ == "__main__":
 
     from modules.manager import Manager
     manager = Manager(config) 
-    asyncio.run(main())
+
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(main())
+    loop.run_forever(task)
+
+    asyncio.run

@@ -3,6 +3,7 @@ import logging
 from typing import Tuple
 import aiofiles
 import os
+from automations.bot import Bot
 
 class SocketTrigger(object):
     def __init__(self, name:str, event_to_catch:str, on_catch:callable) -> None:
@@ -13,8 +14,6 @@ class SocketTrigger(object):
     def set(self):
         self.on_catch()
         return
-
-
 
 class WPPSession(object):
     def __init__(self, name:str, token:str|None, status:str="CLOSED") -> None:
@@ -41,6 +40,8 @@ class Manager(object):
         
         self.triggers = []
         
+        self.is_started = False
+        
     def __setup_services(self, config:dict):
         # wpp api client
         from modules.services.wpp_api_client import WPPApiClient
@@ -58,6 +59,9 @@ class Manager(object):
         database_config = config["database"]
         from modules.services.database_client import DatabaseClient
         self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
+        
+        from automations.bot import Bot
+        self.bot = Bot(self)
         
     def __create_session(self, config:dict):
         #check if session and token already saved on file and get token from file
@@ -91,9 +95,13 @@ class Manager(object):
             #here self.session.status must have to be "CREATED" and a token must be created and stored
             #then
             await self.start_session()
-            #here self.session.status must have to be "CONNECTED"
+            #here self.session.status must have to be "CONNECTED" if not i dont now what to do (for now)
             await self.send_message("Hello World!")
-            #now i can start the bot
+            #TODO check if message was recieved | implement tests 
+            
+            self.is_started = True
+            #now that all the services are started i can start bot (what does this means?)
+            await self.bot.start()
 
         
     async def __get_session_token(self) -> Tuple[str, bool, str]:
@@ -201,3 +209,6 @@ class Manager(object):
         await self.fastapi_server.close()
         await self.wpp_socket_client.close()
         await self.wpp_api_client.close()#
+        
+        loop = asyncio.get_event_loop()
+        loop.stop()
