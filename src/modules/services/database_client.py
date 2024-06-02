@@ -28,7 +28,7 @@ class DatabaseClient:
             url = "sqlite+aiosqlite:///./database.db"
         else: raise ValueError("invalid environment")
         
-        self.engine = create_async_engine(url, echo=True)
+        self.engine = create_async_engine(url, echo=False)
         self.Session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
         self.__load_models()
         

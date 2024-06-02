@@ -4,11 +4,6 @@ import socketio
 import logging
 
 class WPPSocketIOClient:
-    event_mapper = {
-        #event:method on manager
-        "received-message": "on_received_message",
-        "session-logged": "on_session_loged"
-    }
     
     def __init__(self, url:str, manager) -> None:
         self.sio = socketio.AsyncClient()
@@ -33,14 +28,7 @@ class WPPSocketIOClient:
 
     async def on_event(self, event, data):
         logging.info(f"event recieved: {event}")
-        try:
-            #busca no event mapper o nome da função para chamar no manager 
-            method_name = self.event_mapper.get(event)
-            method = getattr(self.manager, method_name)
-            logging.debug(f"calling method {method_name} on manager")
-            await method(event, data)
-        except:
-            pass
+        await self.manager.on_socket_event(event, data)
 
     async def start(self):
         await self.connect()
