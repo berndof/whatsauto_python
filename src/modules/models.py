@@ -3,8 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class Song(Base):
+#Model example
+""" class Song(Base):
     __tablename__ = 'song'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    artist = Column(String)
+    artist = Column(String) """
