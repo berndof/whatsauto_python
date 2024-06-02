@@ -5,7 +5,7 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import text
 import logging
 
-
+## REWORK ##
 class DatabaseClient:
     def __init__(self, environment:str, config:dict) -> None:
         
@@ -24,6 +24,7 @@ class DatabaseClient:
         return [User]
 
     async def start(self):
+        
         if self.environment == "dev":
             url = "sqlite+aiosqlite:///./database.db"
         else: raise ValueError("invalid environment")
