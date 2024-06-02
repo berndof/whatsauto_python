@@ -34,6 +34,9 @@ class Manager(object):
         self.__create_session(config)
         self.token_file_path = config["token_file_path"]
         
+        #*temporary
+        self.dev_phone = config["dev_phone"]
+        
         self.__get_secret_key(config)
         
         self.triggers = []
@@ -89,7 +92,7 @@ class Manager(object):
             #then
             await self.start_session()
             #here self.session.status must have to be "CONNECTED"
-            
+            await self.send_message("Hello World!")
             #now i can start the bot
 
         
@@ -173,32 +176,20 @@ class Manager(object):
                 logging.debug(f"trigger {trigger.name} triggered")
                 trigger.set()
                 break
+    
+    #*test method
+    async def send_message(self, message:str) -> None:
         
-    #! deprecated since changed handle event logic
-    async def on_received_message(self, event, data):
-        
-        response = data["response"]
-        logging.info (f"message received: {response}")
-        
-        message = response["content"]
-
-        #send message to automations
-        #else:
-        if message != "":
-            await self.bot.on_message(response)
-        
-    async def send_message(self, message:str, phone:str) -> None:
-        
-        endpoint = f"{self.SESSION_NAME}/send-message"
+        endpoint = f"{self.session.name}/send-message"
         body = {
-            "phone": f"{phone}",
+            "phone": f"{self.dev_phone}",
             "isGroup": False,
             "isNewsletter": False,
             "message": f"{message}"
         }
         headers = {
             'accept': '*/*',
-            'Authorization': f'Bearer {self.SESSION_TOKEN}',
+            'Authorization': f'Bearer {self.session.token}',
             'Content-Type': 'application/json'
         }
         response = await self.wpp_api_client.make_request("POST", endpoint, headers, body)
