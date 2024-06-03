@@ -4,16 +4,7 @@ from typing import Tuple
 import aiofiles
 import os
 from automations.bot import Bot
-
-class SocketTrigger(object):
-    def __init__(self, name:str, event_to_catch:str, on_catch:callable) -> None:
-        self.name = name
-        self.event_to_catch = event_to_catch
-        self.on_catch = on_catch
-    
-    def set(self):
-        self.on_catch()
-        return
+from automations.triggers.socket_trigger import SocketTrigger
 
 class WPPSession(object):
     def __init__(self, name:str, token:str|None, status:str="CLOSED") -> None:
@@ -100,10 +91,11 @@ class Manager(object):
             #TODO check if message was recieved | implement tests 
             
             self.is_started = True
+            
             #now that all the services are started i can start bot (what does this means?)
             await self.bot.start()
 
-        
+    #TODO this method on WhatsappSession class
     async def __get_session_token(self) -> Tuple[str, bool, str]:
             
         endpoint = f"{self.session.name}/{self.SECRET_KEY}/generate-token"
@@ -131,10 +123,22 @@ class Manager(object):
         response = await self.wpp_api_client.make_request("GET", endpoint, headers)
         return response
         
-    async def __create_socket_trigger(self, trigger_name:str, event_to_catch:str, on_catch:callable) -> SocketTrigger:
-        trigger = SocketTrigger(trigger_name, event_to_catch, on_catch)
+    async def add_trigger(self, trigger) -> SocketTrigger:
+        logging.debug(f"adding trigger {trigger.name}")
         self.triggers.append(trigger)
         return trigger   
+    
+    async def on_socket_event(self, event, data):
+        
+        print(self.triggers)
+        
+        #TODO IMPROVE THIS
+        for trigger in self.triggers:
+            logging.debug (f"checking trigger {trigger.name}")
+            if trigger.event_to_catch == str(event):
+                logging.debug(f"trigger {trigger.name} triggered")
+                trigger.set(event, data)
+                break
         
     async def start_session(self) -> Tuple[str, str]:
         
@@ -162,7 +166,8 @@ class Manager(object):
                     self.session.status = "CONNECTED"
                     return
                 
-                await self.__create_socket_trigger('wait_for_qr_scan','session_logged', on_catch)
+                trigger = SocketTrigger("wait_for_qr_scan", "session_logged", on_catch)
+                await self.add_trigger(trigger)
                 
             #satys on loop until status is "CONNECTED"
             if status == "CONNECTED":
@@ -171,19 +176,6 @@ class Manager(object):
             await asyncio.sleep(1) #wait 1 sec to check session status again
             
         return 
-    
-    async def on_socket_event(self, event, data):
-        # if event matches with at least one trigger in self.triggers, the event has to be processed
-        #the atribute is trigger.event_to_catch
-        logging.debug(f"event recieved: {event}, data: {data}")
-        event_name = str(event)
-        
-        #TODO IMPROVE THIS
-        for trigger in self.triggers:
-            if trigger.event_to_catch == event_name:
-                logging.debug(f"trigger {trigger.name} triggered")
-                trigger.set()
-                break
     
     #*test method
     async def send_message(self, message:str) -> None:

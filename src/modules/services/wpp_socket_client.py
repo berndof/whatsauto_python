@@ -27,7 +27,7 @@ class WPPSocketIOClient:
         logging.info(f"disconnected of socket on {self.url}")
 
     async def on_event(self, event, data):
-        logging.info(f"event recieved: {event}")
+        logging.debug(f"event recieved: {event}")
         await self.manager.on_socket_event(event, data)
 
     async def start(self):
