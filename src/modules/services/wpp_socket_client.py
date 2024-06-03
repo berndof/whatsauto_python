@@ -2,6 +2,7 @@
 import asyncio
 import socketio
 import logging
+from automations.triggers.socket_trigger import SocketTrigger, AsyncSocketTrigger
 
 class WPPSocketIOClient:
     
@@ -28,7 +29,19 @@ class WPPSocketIOClient:
 
     async def on_event(self, event, data):
         logging.debug(f"event recieved: {event}")
-        await self.manager.on_socket_event(event, data)
+        #await self.manager.on_socket_event(event, data)
+        print(self.manager.triggers)
+        
+        #TODO IMPROVE THIS
+        for trigger in self.manager.triggers:
+            logging.debug (f"checking trigger {trigger.name}")
+            if trigger.event_to_catch == str(event):
+                if type(trigger) == SocketTrigger:
+                    trigger.set(event, data)
+                if type(trigger) == AsyncSocketTrigger:
+                    await trigger.set(event, data)
+                    
+                break
 
     async def start(self):
         await self.connect()

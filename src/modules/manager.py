@@ -127,18 +127,7 @@ class Manager(object):
         logging.debug(f"adding trigger {trigger.name}")
         self.triggers.append(trigger)
         return trigger   
-    
-    async def on_socket_event(self, event, data):
-        
-        print(self.triggers)
-        
-        #TODO IMPROVE THIS
-        for trigger in self.triggers:
-            logging.debug (f"checking trigger {trigger.name}")
-            if trigger.event_to_catch == str(event):
-                logging.debug(f"trigger {trigger.name} triggered")
-                trigger.set(event, data)
-                break
+
         
     async def start_session(self) -> Tuple[str, str]:
         

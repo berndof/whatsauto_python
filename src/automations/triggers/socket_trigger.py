@@ -14,6 +14,24 @@ class SocketTrigger(object):
         self.on_catch(event, data)
         return
 
+class AsyncSocketTrigger(object):
+    def __init__(self, name:str, event_to_catch:str, on_catch:callable) -> None:
+        self.name = name
+        self.event_to_catch = event_to_catch
+        self.on_catch = on_catch
+        
+    def __str__(self) -> str:
+        return self.name
+    
+    async def set(self, event, data):
+        logging.info(f"trigger {self.name} set")
+        await self.on_catch(event, data)
+        return
+
+
+#events 
+# mensagem-enviada
+# received-message
 
 #events 
 # mensagem-enviada
