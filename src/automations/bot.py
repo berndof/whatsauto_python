@@ -9,7 +9,10 @@ class Bot(object):
         self.is_started = True
         # do things that bot have to do 
         
+        ## TODO 
+        
         ## TODO implement queues
+        
         
         return
     
