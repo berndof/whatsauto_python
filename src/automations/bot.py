@@ -1,22 +1,9 @@
 import logging, yaml, os
 from automations.triggers.socket_trigger import SocketTrigger
-from modules.models import Chat, Queue
+from modules.models import Chat
 
 #TODO Bot(Manager)
-class Bot(object):
-    def __load_config(path_to_config:str):
-        
-        if not os.path.exists(path_to_config):
-            logging.info("config file not found")
-            raise FileNotFoundError
-
-        with open(path_to_config, "r") as f:
-            config = yaml.safe_load(f)
-        return config
-    
-    path_to_config = "src/automations/bot_config.yaml"
-    config = __load_config(path_to_config)
-    
+class Bot(object):    
     def __init__(self, manager):
         self.manager = manager
         self.is_started = False

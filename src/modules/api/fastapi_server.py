@@ -1,19 +1,18 @@
 from fastapi import FastAPI
+from modules.config import FASTAPI_HOST, FASTAPI_PORT
 import asyncio
-from modules.manager import Manager
 
-class FastAPIServer:
-    def __init__(self, manager:Manager, host:str="0.0.0.0", port:int=8000):
+class FastAPIServer(object):
+    def __init__(self, manager):
         self.manager = manager
-        self.host = host
-        self.port = port
         self.app = FastAPI()
     
     async def start(self):
-        await self._setup_routes()
-        asyncio.create_task(self.run(self.host, self.port))
+        await self.__setup_routes()
+        asyncio.create_task(self.run())
         
-    async def _setup_routes(self):
+    async def __setup_routes(self):
+        
         @self.app.post("/start-session")
         async def start_session():
             status, qr_data = await self.manager.start_session()
@@ -22,9 +21,8 @@ class FastAPIServer:
                 "session_status": status,
             }
 
-    async def run(self, host:str, port:int):
-        
+    async def run(self):
         import uvicorn
-        config = uvicorn.Config(self.app, host=host, port=port, log_level="info")
+        config = uvicorn.Config(self.app, host=FASTAPI_HOST, port=FASTAPI_PORT, log_level="info")
         server = uvicorn.Server(config)
         await server.serve()

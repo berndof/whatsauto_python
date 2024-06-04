@@ -1,17 +1,15 @@
 # wpp_socket_client.py
-import asyncio
-import socketio
-import logging
+import asyncio, socketio, logging
+from modules.config import WPP_API_HOST
 
-class WPPSocketIOClient:
+class WPPSocketIOClient(object):
     
-    def __init__(self, url:str, manager) -> None:
+    def __init__(self, manager) -> None:
         self.sio = socketio.AsyncClient()
-        self.url = url
         self.manager = manager
 
     async def connect(self) -> None:
-        await self.sio.connect(self.url)
+        await self.sio.connect(WPP_API_HOST)
         logging.info("connecting to socket")
 
     async def listen(self) -> None:
@@ -21,10 +19,10 @@ class WPPSocketIOClient:
             logging.error(f"{e} | While listening to event")
 
     async def on_connect(self):
-        logging.info(f"connected to socket on {self.url}")
+        logging.info(f"socket connected on {WPP_API_HOST}")
 
     async def on_disconnect(self):
-        logging.info(f"disconnected of socket on {self.url}")
+        logging.info(f"disconnected of socket on {WPP_API_HOST}")
 
     async def on_event(self, event, data):
         logging.debug(f"event recieved: {event}")
