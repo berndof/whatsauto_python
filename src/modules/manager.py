@@ -1,11 +1,5 @@
 import logging, asyncio, aiofiles, os
-from typing import Tuple
-
-from modules.config import TOKEN_FILE_PATH, SESSION_NAME, SECRET_KEY, DEV_PHONE
-
-#rom modules.services.database.test_dal import ChatDAL
-
-#from modules.models import Chat
+from modules.config import TOKEN_FILE_PATH, SESSION_NAME
 from modules import services
 from modules.bot import Bot
 
@@ -45,10 +39,6 @@ class Manager(object):
                 await f.write(f"{token}:{self.name}")
                 self.token = token
                 return
-                
-
-    triggers = []
-    is_started = False
     
     def __init__(self) -> None:
         
@@ -63,9 +53,8 @@ class Manager(object):
         
     async def start(self) -> None:        
         
-        await self.wpp_socket_client.start()
-        #await self.wpp_api_client.start()
         await self.db.start()
+        await self.wpp_socket_client.start()
         await self.fastapi_server.start()
         
         await self.start_session()
