@@ -1,16 +1,14 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from modules.config import Base
 
-Base = declarative_base()
-
-class Queue(Base):
+""" class Queue(Base):
     __tablename__ = 'queue'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     chat = relationship("Chat", backref="queues")
     is_active = Column(Boolean)
-    greeting_message = Column(String)
+    greeting_message = Column(String) """
 
 class Chat(Base):
     def __repr__(self):
@@ -21,11 +19,11 @@ class Chat(Base):
 
     __tablename__ = 'chat'
     id = Column(Integer, primary_key=True)
-    phone = Column(String)
+    #phone = Column(String)
     name = Column(String)
-    is_contact = Column(Boolean)
-    queue_id = Column(Integer, ForeignKey('queue.id'))
-    queue = relationship("Queue", backref="chats")
+    #is_contact = Column(Boolean)
+    #queue_id = Column(Integer, ForeignKey('queue.id'))
+    #queue = relationship("Queue", backref="chats")
 
 
 #Model example

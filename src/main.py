@@ -42,8 +42,8 @@ async def main():
     # Keep the event loop running 
     # TODO i think this loop can be replaced for some async loop function like run forever
     
-    """while True:
-        await asyncio.sleep(1)"""
+    while True:
+        await asyncio.sleep(1)
         
 if __name__ == "__main__":
     
@@ -53,8 +53,5 @@ if __name__ == "__main__":
     from modules.manager import Manager
     manager = Manager(config) 
 
-    loop = asyncio.get_event_loop()
-    task = loop.create_task(main())
-    loop.run_forever()
-
-    asyncio.run
+    #loop = asyncio.get_event_loop
+    asyncio.run(main())

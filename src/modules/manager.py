@@ -3,8 +3,10 @@ import logging
 from typing import Tuple
 import aiofiles
 import os
-from automations.bot import Bot
+#from automations.bot import Bot
 from automations.triggers.socket_trigger import SocketTrigger
+from modules.config import engine, Base, async_session
+from modules.services.database.test_dal import ChatDAL
 
 from modules.models import Chat
 
@@ -49,12 +51,14 @@ class Manager(object):
         self.fastapi_server = FastAPIServer(self, config["fastapi_host"], config["fastapi_port"])
         
         #database client
-        database_config = config["database"]
-        from modules.services.database_client import DatabaseClient
-        self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
-        
-        from automations.bot import Bot
-        self.bot = Bot(self, )
+        #database_config = config["database"]
+        #from modules.services.database_client import DatabaseClient
+        #self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
+
+    
+    
+        #from automations.bot import Bot
+        #self.bot = Bot(self, )
         
     def __create_session(self, config:dict):
         #check if session and token already saved on file and get token from file
@@ -76,26 +80,38 @@ class Manager(object):
         self.SECRET_KEY = config["secret_key"]
         
     async def start(self) -> None:        
+        
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+            
 
-        await self.db_client.start()
-        await self.fastapi_server.start()
-        await self.wpp_socket_client.start()
-        await self.wpp_api_client.start()
 
-        if self.session.status == "CLOSED":
-            self.session.token = await self.__get_session_token()
+        async with async_session() as session:
+            async with session.begin():
+                chat_dal = ChatDAL(session)
+                print("alo")
+                return await chat_dal.create_chat("teste")
+            
+        #await self.db_client.start()
+        #await self.fastapi_server.start()
+        #await self.wpp_socket_client.start()
+        #await self.wpp_api_client.start()
+
+        #if self.session.status == "CLOSED":
+        #    self.session.token = await self.__get_session_token()
         
         #here self.session.status must have to be "CREATED" and a token must be created and stored
         #then
-        await self.start_session()
+        #await self.start_session()
         #here self.session.status must have to be "CONNECTED" if not i dont now what to do (for now)
-        await self.send_message("Hello World!")
+        #await self.send_message("Hello World!")
         #TODO check if message was recieved | implement tests 
         
-        self.is_started = True
+        #self.is_started = True
         
         #now that all the services are started i can start bot (what does this means?)
-        await self.bot.start()
+        #await self.bot.start()
 
 
     #TODO get_chat on database
