@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
+import logging
 
 ENVIRONMENT_CONFIG = {
     "environment": "dev",
@@ -29,3 +30,7 @@ engine = create_async_engine(DATABASE_URL, future=True, echo=True)
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 Base = declarative_base()
 
+logging.basicConfig(level=logging.DEBUG,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%d/%m/%Y %H:%M:%S")
+logging.info("log level set to debug")

@@ -31,7 +31,8 @@ class WPPApiClient():
     
     async def get_session_token(self):
         endpoint = f"{SESSION_NAME}/{SECRET_KEY}/generate-token"
-        return await self.__make_request("POST", endpoint)
+        response = await self.__make_request("POST", endpoint)
+        return response["token"]
         
     async def start_session(self, session):
         endpoint = f"{session.name}/start-session"
@@ -41,7 +42,7 @@ class WPPApiClient():
         response =  await self.__make_request("POST", endpoint, headers) 
         
         logging.debug(f"session {session.name} status: {response['status']}")
-        print(response)
+
         return response
 
     async def get_session_status(self, session):

@@ -1,6 +1,5 @@
 import logging, asyncio, aiofiles, os
 from typing import Tuple
-from automations.triggers.socket_trigger import SocketTrigger
 
 from modules.config import TOKEN_FILE_PATH, SESSION_NAME, SECRET_KEY, DEV_PHONE
 
@@ -70,6 +69,8 @@ class Manager(object):
         await self.fastapi_server.start()
         
         await self.start_session()
+        
+        print("sessao pronta")
 
     async def start_session(self) -> None:
         #TODO change for while
@@ -78,8 +79,8 @@ class Manager(object):
             token = await self.wpp_api_client.get_session_token()
             await self.session.store_token(token)
         
-        #self.session.status = "CONNECTED"
         response = await self.wpp_api_client.start_session(self.session)
+        
         if response["status"] == "CONNECTED":
             self.session.status = "CONNECTED"
             return True 
@@ -89,50 +90,33 @@ class Manager(object):
         
     async def wait_qr_scan(self):
         while self.session.status == "WAITING":
-            
             response = await self.wpp_api_client.get_session_status(self.session)
             status = response["status"] 
-            
             if status == "QRCODE":
-
-                qr_data = response["urlcode"]
-                #TODO send qr_data to frontend for build qr then wait for qr_scan 
-                #by now scan qr from wpp-server console
+                qr_data = response["urlcode"] #TODO send qr_data for build qr code
+                #scan on wppconnect-server terminal session
                 
-                def on_catch(self, event, data):
-                    self.session.status = "CONNECTED"
-                    return
+                logging.debug(f"qr_data: {qr_data}")
                 
-                trigger = SocketTrigger("wait_for_qr_scan", "session_logged", on_catch)
-                self.triggers.append(trigger)
-                
-            #satys on loop until status is "CONNECTED"
-            if status == "CONNECTED":
-                return True
-
+                self.session.status = "WAITING_SCAN"   
+                break
                 
             await asyncio.sleep(1) #wait 1 sec to check session status again
             
+        #add trigger    
+        async def on_session_loged(event, data):
+            self.session.status = "CONNECTED"
+            return
+        
+        await self.wpp_socket_client.add_trigger("session-logged", on_catch=on_session_loged)
             
-        #here self.session.status must have to be "CREATED" and a token must be created and stored
-        #then
-        #await self.start_session()
+        while self.session.status != "CONNECTED":
+            logging.debug("waiting for session loged")
+            await asyncio.sleep(1)
         
-        #here self.session.status must have to be "CONNECTED" if not i dont now what to do (for now)
+        return True
         
-        #await self.send_message("Hello World!")
-        #TODO check if message was recieved | implement tests 
-        
-        #self.is_started = True
-        
-        #now that all the services are started i can start bot (what does this means?)
-        #await self.bot.start()
 
-    async def add_trigger(self, trigger) -> SocketTrigger:
-        logging.debug(f"adding trigger {trigger.name}")
-        self.triggers.append(trigger)
-        return trigger   
-    
     #*test method
     async def send_message(self, message:str) -> None:
         
