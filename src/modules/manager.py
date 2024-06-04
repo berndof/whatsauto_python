@@ -6,6 +6,8 @@ import os
 from automations.bot import Bot
 from automations.triggers.socket_trigger import SocketTrigger
 
+from modules.models import Chat
+
 class WPPSession(object):
     def __init__(self, name:str, token:str|None, status:str="CLOSED") -> None:
         logging.info(f"init session: name={name}, token={token}")
@@ -52,7 +54,7 @@ class Manager(object):
         self.db_client = DatabaseClient(environment=config["environment"], config=database_config)
         
         from automations.bot import Bot
-        self.bot = Bot(self)
+        self.bot = Bot(self, )
         
     def __create_session(self, config:dict):
         #check if session and token already saved on file and get token from file
@@ -75,25 +77,45 @@ class Manager(object):
         
     async def start(self) -> None:        
 
-            await self.db_client.start()
-            await self.fastapi_server.start()
-            await self.wpp_socket_client.start()
-            await self.wpp_api_client.start()
+        await self.db_client.start()
+        await self.fastapi_server.start()
+        await self.wpp_socket_client.start()
+        await self.wpp_api_client.start()
 
-            if self.session.status == "CLOSED":
-                self.session.token = await self.__get_session_token()
+        if self.session.status == "CLOSED":
+            self.session.token = await self.__get_session_token()
+        
+        #here self.session.status must have to be "CREATED" and a token must be created and stored
+        #then
+        await self.start_session()
+        #here self.session.status must have to be "CONNECTED" if not i dont now what to do (for now)
+        await self.send_message("Hello World!")
+        #TODO check if message was recieved | implement tests 
+        
+        self.is_started = True
+        
+        #now that all the services are started i can start bot (what does this means?)
+        await self.bot.start()
+
+
+    #TODO get_chat on database
+    async def get_chat(self, phone:str) -> Chat | None:
+        logging.debug(f"get_chat: phone={phone}")
+        try:
+            session = await self.db_client.get_session()
+            chat = session.query(Chat).filter_by(phone=phone).first()
+        except Exception as e:
+            logging.warn(e)
+            chat = None
+        finally:
+            return chat
             
-            #here self.session.status must have to be "CREATED" and a token must be created and stored
-            #then
-            await self.start_session()
-            #here self.session.status must have to be "CONNECTED" if not i dont now what to do (for now)
-            await self.send_message("Hello World!")
-            #TODO check if message was recieved | implement tests 
-            
-            self.is_started = True
-            
-            #now that all the services are started i can start bot (what does this means?)
-            await self.bot.start()
+
+
+
+
+
+
 
     #TODO this method on WhatsappSession class
     async def __get_session_token(self) -> Tuple[str, bool, str]:
@@ -128,7 +150,6 @@ class Manager(object):
         self.triggers.append(trigger)
         return trigger   
 
-        
     async def start_session(self) -> Tuple[str, str]:
         
         endpoint = f"{self.session.name}/start-session"

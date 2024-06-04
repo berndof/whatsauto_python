@@ -1,29 +1,75 @@
+import logging, yaml, os
 from automations.triggers.socket_trigger import SocketTrigger
-import logging
+from modules.models import Chat, Queue
 
+#TODO Bot(Manager)
 class Bot(object):
+    def __load_config(path_to_config:str):
+        
+        if not os.path.exists(path_to_config):
+            logging.info("config file not found")
+            raise FileNotFoundError
+
+        with open(path_to_config, "r") as f:
+            config = yaml.safe_load(f)
+        return config
+    
+    path_to_config = "src/automations/bot_config.yaml"
+    config = __load_config(path_to_config)
+    
     def __init__(self, manager):
         self.manager = manager
         self.is_started = False
+        self.queues = {}
+        
+        
+    async def __build_queues(self):
+        queues = self.config["queues"]
+        if not queues:
+            #TODO default configuration
+            raise ValueError("queues not found in config")
+        
+        for queue in queues:
+            queue_name = queue["name"]
+            greeting_message = queue["greetings_message"]
+
+            self.manager.get_queue(queue_name)
+        
     
     async def start(self):
         self.is_started = True
         logging.debug("bot started")
+        
+        #await self.__build_queues(self, )
         # do things that bot have to do 
         
-        ## TODO 
-        
-        ## TODO implement queues
         ## cria o trigger para esperar por novas mensagens
         trigger = SocketTrigger("listen_recieved_messages", "received-message", self.check_message)
-        self.listen_recieved_messages_trigger = await self.manager.add_trigger(trigger)
-        
+        self.message_recieved_trigger = await self.manager.add_trigger(trigger)
+
         return
     
-    def check_message(self, event, data):
-        print ("sync trigger triggered")
-        print(event, data)
-        return
+    async def check_message(self, event, data):
+        #checa se ja existe um chat com quem enviou a mensagem 
+        sender = data["response"]["sender"]
+        sender_phone = sender["id"].split("@")[0] # remove @c.us from phone
+        sender_name = sender["name"]
+        
+        chat = await self.manager.get_chat(sender_phone)
+        if not chat:
+            chat = Chat(phone=sender_phone,name=sender_name, is_contact=True, queue=None)
+            
+        await self.manager.db_client.add_chat(chat)
+        
+        if not chat.queue:
+            
+            #first attendance     
+            await self.first_contact(chat)
+            
+        
+    async def first_contact(self, chat):
+        #send greetings message
+        self.manager.send_message(chat.phone, chat.queue.greeting_message)
         
     async def stop(self):
         self.is_started = False

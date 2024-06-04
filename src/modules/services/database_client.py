@@ -1,6 +1,7 @@
-import asyncio
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
+
 
 from modules.models import Base
 
@@ -22,11 +23,6 @@ class DatabaseClient(object):
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
-    async def get_session(self):
-        async with self.Session() as session:
-            yield session
-        return
-
     async def start(self):
         if not self.is_started:
             await self.create_all_tables()
@@ -35,4 +31,9 @@ class DatabaseClient(object):
             raise NotImplementedError("DatabaseClient error")
     
         return self.is_started
+
+    async def add_chat(self, chat):
+        async with self.Session() as session:
+            async with session.begin():
+                session.add(chat)
 
