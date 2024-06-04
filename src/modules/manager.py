@@ -6,8 +6,8 @@ from modules.config import TOKEN_FILE_PATH, SESSION_NAME, SECRET_KEY, DEV_PHONE
 #rom modules.services.database.test_dal import ChatDAL
 
 #from modules.models import Chat
-from modules.services import services
-from automations.bot import Bot
+from modules import services
+from modules.bot import Bot
 
 
 

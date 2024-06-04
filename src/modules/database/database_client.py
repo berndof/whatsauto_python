@@ -1,12 +1,11 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, Session
-
-from modules.config import DATABASE_URL, engine, async_session, Base
+from modules.config import engine, Base
+from modules.database import dal
 
 class DatabaseClient(object):
     def __init__(self):
         self.is_started = False
+        self.access 
     
     async def create_all_tables(self):
         async with engine.begin() as conn:
@@ -16,12 +15,10 @@ class DatabaseClient(object):
     async def start(self):    
         await self.create_all_tables()
         self.is_started = True
+        
+    async def get_one_chat(self, phone):
+        async with engine.connect() as conn:
+            result = await conn.execute(dal.ChatDAL.select().where(dal.ChatDAL.c.phone == phone))
+            row = await result.fetchone()
+            return row
 
-    
-
-
-        """async with async_session() as session:
-            async with session.begin():
-                chat_dal = ChatDAL(session)
-                print("alo")
-                return await chat_dal.create_chat("teste")"""

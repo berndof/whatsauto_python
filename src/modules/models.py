@@ -2,28 +2,28 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from modules.config import Base
 
-""" class Queue(Base):
+class Queue(Base):
+    def __repr__(self):
+        return f"Queue(name={self.name}, chats={self.chats})"
+    
     __tablename__ = 'queue'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    chat = relationship("Chat", backref="queues")
+    chats = relationship("Chat", backref="queue")
     is_active = Column(Boolean)
-    greeting_message = Column(String) """
+    greeting_message = Column(String)
 
 class Chat(Base):
     def __repr__(self):
         return f"Chat(phone={self.phone}, name={self.name})"
     
-    def __str__(self):
-        return self.name
-
     __tablename__ = 'chat'
     id = Column(Integer, primary_key=True)
-    #phone = Column(String)
+    phone = Column(String)
     name = Column(String)
-    #is_contact = Column(Boolean)
-    #queue_id = Column(Integer, ForeignKey('queue.id'))
-    #queue = relationship("Queue", backref="chats")
+    is_contact = Column(Boolean)
+    queue_id = Column(Integer, ForeignKey('queue.id'))
+    queue = relationship("Queue", backref="chats")
 
 
 #Model example
