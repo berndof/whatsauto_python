@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from modules.config import FASTAPI_HOST, FASTAPI_PORT
+from config import FASTAPI_HOST, FASTAPI_PORT
 import asyncio
 
 class FastAPIServer(object):

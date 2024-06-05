@@ -9,4 +9,6 @@ class Chat(Model):
     phone = fields.IntField()
     name = fields.CharField(max_length=255)
     is_contact = fields.BooleanField(default=False)
-    
+    queue = fields.ForeignKeyField("models.Queue", null=True, on_delete=fields.SET_NULL, related_name="chats", default=None)
+
+        

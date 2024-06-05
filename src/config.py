@@ -1,7 +1,8 @@
 
 import logging
 
-DEV_PHONE = "554999564665"
+ENV = "dev"
+DEV_PHONE = 554999564665
 
 TOKEN_FILE_PATH="./src/data/sessions.txt"
 

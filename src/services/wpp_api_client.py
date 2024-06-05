@@ -1,11 +1,11 @@
 import aiohttp
 import logging
 from typing import Literal, Optional
-from modules.config import WPP_API_HOST, SECRET_KEY, SESSION_NAME
+from config import WPP_API_HOST, SECRET_KEY, SESSION_NAME
 
 class WPPApiClient():    
     
-    async def __make_request(self, method:Literal["POST", "GET"], endpoint:str, headers:Optional[dict]=None, data:Optional[dict]=None):
+    async def makeRequest(self, method:Literal["POST", "GET"], endpoint:str, headers:Optional[dict]=None, data:Optional[dict]=None):
     
         async with aiohttp.ClientSession() as session:
             if method == "POST":
@@ -33,19 +33,4 @@ class WPPApiClient():
         endpoint = f"{SESSION_NAME}/{SECRET_KEY}/generate-token"
         response = await self.__make_request("POST", endpoint)
         return response["token"]
-        
-    async def start_session(self, session):
-        endpoint = f"{session.name}/start-session"
-        
-        headers = {"Authorization": f"Bearer {session.token}"}
-        
-        response =  await self.__make_request("POST", endpoint, headers) 
-        
-        logging.debug(f"session {session.name} status: {response['status']}")
-
-        return response
-
-    async def get_session_status(self, session):
-        endpoint = f"{session.name}/status-session"
-        headers = {"Authorization": f"Bearer {session.token}"}
-        return await self.__make_request("GET", endpoint, headers)
+    

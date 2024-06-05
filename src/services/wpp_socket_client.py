@@ -1,6 +1,6 @@
 # wpp_socket_client.py
 import asyncio, socketio, logging
-from modules.config import WPP_API_HOST
+from config import WPP_API_HOST
 from typing import List
 
 class WPPSocketIOClient(object):    

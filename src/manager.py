@@ -1,7 +1,7 @@
 import logging, asyncio, aiofiles, os
-from modules.config import TOKEN_FILE_PATH, SESSION_NAME
-from modules import services
-from modules.bot import Bot
+from config import TOKEN_FILE_PATH, SESSION_NAME, ENV, DEV_PHONE
+import services
+import bot
 
 
 
@@ -46,10 +46,8 @@ class Manager(object):
         self.wpp_socket_client = services.WPPSocketIOClient(self)
         self.fastapi_server = services.FastAPIServer(self)
         self.db = services.DatabaseClient()
-        
-        self.bot = Bot(self)
-        
         self.session = self.WPPSession(SESSION_NAME)
+        self.bot = bot.Bot(self)
         
     async def start(self) -> None:        
         
@@ -57,27 +55,37 @@ class Manager(object):
         await self.wpp_socket_client.start()
         await self.fastapi_server.start()
         
-        await self.start_session()
-        
-        print("sessao pronta")
+        await self.__start_session()
 
-    async def start_session(self) -> None:
+        await self.bot.startListenMessages()
+
+    async def __start_session(self) -> None:
         #TODO change for while
         
         if not self.session.token:
-            token = await self.wpp_api_client.get_session_token()
+            token = await self.__get_session_token()
             await self.session.store_token(token)
         
-        response = await self.wpp_api_client.start_session(self.session)
+        #response = await self.wpp_api_client.start_session(self.session)
+        
+        endpoint = f"{self.session.name}/start-session"
+        headers = {"Authorization": f"Bearer {self.session.token}"}
+        response =  await self.wpp_api_client.makeRequest("POST", endpoint, headers) 
+        logging.debug(f"session {self.session.name} status: {response['status']}")
         
         if response["status"] == "CONNECTED":
             self.session.status = "CONNECTED"
             return True 
         else:
             self.session.status = "WAITING"
-            return await self.wait_qr_scan()
+            return await self.__wait_qr_scan()
         
-    async def wait_qr_scan(self):
+    async def __get_session_token(self):
+        endpoint = f"{self.session.name}/status-session"
+        headers = {"Authorization": f"Bearer {self.session.token}"}
+        return await self.wpp_api_client.makeRequest("GET", endpoint, headers)
+
+    async def __wait_qr_scan(self):
         while self.session.status == "WAITING":
             response = await self.wpp_api_client.get_session_status(self.session)
             status = response["status"] 
@@ -104,26 +112,25 @@ class Manager(object):
             await asyncio.sleep(1)
         
         return True
-        
 
-    #*test method
-    async def send_message(self, message:str) -> None:
-        
+    async def sendMessage(self, chat, message):
         endpoint = f"{self.session.name}/send-message"
+        
+        if ENV == "dev" and chat.phone != DEV_PHONE:
+            logging.debug(f"ignoring message from {chat.phone} because it is not dev phone")
+            return
+        
         body = {
-            "phone": f"{self.dev_phone}",
-            "isGroup": False,
-            "isNewsletter": False,
+            "phone": f"{chat.phone}",
             "message": f"{message}"
         }
+        
         headers = {
             'accept': '*/*',
             'Authorization': f'Bearer {self.session.token}',
             'Content-Type': 'application/json'
         }
-        response = await self.wpp_api_client.make_request("POST", endpoint, headers, body)
-        print(response)
-        #check if sucess and etc TODO
+        return await self.wpp_api_client.makeRequest("POST", endpoint, headers, body)
         
     async def close(self) -> None:
         await self.db_client.close()

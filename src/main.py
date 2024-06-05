@@ -17,7 +17,7 @@ async def main():
         await asyncio.sleep(1)
         
 if __name__ == "__main__":
-    from modules.manager import Manager
+    from manager import Manager
     manager = Manager() 
 
     #loop = asyncio.new_event_loop()
