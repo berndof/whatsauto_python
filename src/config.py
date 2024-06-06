@@ -1,6 +1,8 @@
 
 import logging
 
+TEMPLATE_DIR = "src/templates"
+
 ENV = "dev"
 DEV_PHONE = 554999564665
 
@@ -10,7 +12,7 @@ SESSION_NAME = "dev"
 SECRET_KEY = "Sccdev76"
 
 FASTAPI_HOST = "0.0.0.0"
-FASTAPI_PORT = 8000
+SERVER_PORT = 8000
 
 WPP_API_HOST = "http://localhost:21465"
 

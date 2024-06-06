@@ -1,7 +1,7 @@
 import aiohttp
 import logging
 from typing import Literal, Optional
-from config import WPP_API_HOST, SECRET_KEY, SESSION_NAME
+from config import WPP_API_HOST
 
 class WPPApiClient():    
     
@@ -28,9 +28,4 @@ class WPPApiClient():
                 except Exception as e:
                     logging.error(f"failed to make a GET request: {e}")
                     return None
-    
-    async def get_session_token(self):
-        endpoint = f"{SESSION_NAME}/{SECRET_KEY}/generate-token"
-        response = await self.__make_request("POST", endpoint)
-        return response["token"]
     

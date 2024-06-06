@@ -1,27 +1,19 @@
 import asyncio
-import logging
-import yaml
-import os
-
+from manager import Manager
 
 
 async def main():
-    
-    # * WORKING HERE
-    await manager.start() #set db, start the consumer ..
-    
-    # Keep the event loop running 
-    # TODO i think this loop can be replaced for some async loop function like run forever
-    
-    while True:
-        await asyncio.sleep(1)
-        
+    manager = Manager()
+    await manager.start()
+    try:
+        # Mantém o serviço rodando, escutando por eventos do socket e requisições do webserver
+        await asyncio.Event().wait()
+    except KeyboardInterrupt:
+        # Trata a interrupção pelo teclado para encerrar os serviços
+        await manager.close()
+    finally:
+        # Encerra o loop de eventos
+        asyncio.get_event_loop().close()
+
 if __name__ == "__main__":
-    from manager import Manager
-    manager = Manager() 
-
-    #loop = asyncio.new_event_loop()
-    #task = asyncio.create_task(main())
-    #task.run_forever()
     asyncio.run(main())
-
