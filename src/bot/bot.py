@@ -40,7 +40,7 @@ class Bot(object):
             logging.debug(f"ignoring message from {sender["phone"]} because it is not dev phone")
             return
 
-        chat, exists = await models.Chat.get_or_create(phone=sender["phone"], name=sender["phone"])
+        chat, exists = await models.Chat.get_or_create(phone=sender["phone"], name=sender["phone"], chossing_queue=False)
 
         #return await self.check_chat(message, chat)
 

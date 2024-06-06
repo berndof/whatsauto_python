@@ -1,12 +1,11 @@
 from aiohttp import web
-import asyncio
+import logging
 
 class WebServer:
-    def __init__(self, manager):
+    def __init__(self):
         self.app = web.Application()
         self.app.router.add_get('/admin', self.index)
         self.runner = None
-        self.manager = manager
 
     async def index(self, request):
         print("hello")
@@ -17,7 +16,7 @@ class WebServer:
         await self.runner.setup()
         site = web.TCPSite(self.runner, host, port)
         await site.start()
-        #print(f'Server started at http://{host}:{port}')
+        logging.info(f'Server started at http://{host}:{port}')
 
     async def stop(self):
         if self.runner:

@@ -3,7 +3,7 @@ import asyncio, socketio, logging
 from config import WPP_API_HOST
 from typing import List
 
-class WPPSocketIOClient(object):
+class WPPSocketClient(object):
 
     class SocketTrigger(object):
         def __init__(self, event_to_catch:str, on_catch:callable) -> None:
@@ -23,9 +23,8 @@ class WPPSocketIOClient(object):
             await self.on_catch(event, data)
             return
 
-    def __init__(self, manager) -> None:
+    def __init__(self) -> None:
         self.sio = socketio.AsyncClient()
-        self.manager = manager
         self.triggers:List[self.SocketTrigger] = []
 
     async def connect(self) -> None:
