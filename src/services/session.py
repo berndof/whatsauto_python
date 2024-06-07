@@ -59,7 +59,7 @@ class WPPSession(object):
             self.status = "CONNECTED"
             return True
 
-        self.session.status = "WAITING"
+        self.status = "WAITING"
         return await self.__wait_qr_scan()
 
     async def __wait_qr_scan(self):
@@ -72,7 +72,7 @@ class WPPSession(object):
 
                 logging.debug(f"qr_data: {qr_data}")
 
-                self.session.status = "WAITING_SCAN"
+                self.status = "WAITING_SCAN"
                 break
 
             await asyncio.sleep(1) #wait 1 sec to check session status again

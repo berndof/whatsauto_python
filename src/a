@@ -1,0 +1,25 @@
+Para criar uma função que faça hash de uma senha de forma segura e com um padrão consistente, você pode utilizar a biblioteca bcrypt do Python. Aqui vai um exemplo de como você pode implementar a função get_password_hash:
+
+Show Diff
+import bcrypt
+
+async def get_password_hash(self, password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password.decode('utf-8')
+Explicação:
+
+bcrypt.gensalt() gera um salt aleatório, que é necessário para evitar ataques de rainbow table.
+bcrypt.hashpw(password.encode('utf-8'), salt) faz o hash da senha com o salt gerado. O encode('utf-8') é necessário para converter a senha para bytes.
+O resultado é uma string que representa o hash da senha.
+Observações importantes:
+
+É fundamental utilizar um salt aleatório para cada senha, para evitar que dois usuários com a mesma senha tenham o mesmo hash.
+A biblioteca bcrypt é considerada segura e é amplamente utilizada em aplicações modernas.
+É importante armazenar o hash da senha em um banco de dados ou outro meio de armazenamento seguro.
+Para verificar se uma senha é válida, você pode utilizar a função bcrypt.checkpw:
+
+Show Diff
+async def verify_password(self, password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+Essa função verifica se a senha fornecida é igual ao hash armazenado. Se for verdadeiro, retorna True, caso contrário, retorna False.
