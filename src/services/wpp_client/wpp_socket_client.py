@@ -1,5 +1,5 @@
 # wpp_socket_client.py
-import asyncio, socketio, logging
+import socketio, logging
 from config import WPP_API_HOST
 from typing import List
 

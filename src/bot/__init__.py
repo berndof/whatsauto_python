@@ -1,1 +1,1 @@
-from .bot import Bot as app
+from .bot import Bot

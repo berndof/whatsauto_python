@@ -1,11 +1,9 @@
 from aiohttp import web
-from aiohttp_session import setup, get_session
+from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 import logging, aiohttp_jinja2, jinja2
-from app.routes import setup_routes
+from app.controllers.route_controller import routeController
 from config import SECRET_KEY
-import base64
-from hashlib import sha256
 
 class WebServer:
     def __init__(self, app):
@@ -18,7 +16,8 @@ class WebServer:
             enable_async=True
         )
 
-        setup_routes(self.app)
+        #]setup routes
+        self.route_controller = routeController(self.app)
         self.runner = None
 
     async def start(self, host='localhost', port=8080):

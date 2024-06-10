@@ -5,6 +5,7 @@ TEMPLATE_DIR = "src/templates"
 
 ENV = "dev"
 DEV_PHONE = 554999564665
+BOT_PHONE = 554999255718
 
 TOKEN_FILE_PATH="./src/data/sessions.txt"
 

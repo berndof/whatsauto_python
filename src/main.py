@@ -1,5 +1,5 @@
 import asyncio
-from manager import Manager
+from app.manager import Manager
 
 
 async def main():

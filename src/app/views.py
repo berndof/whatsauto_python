@@ -1,22 +1,21 @@
-import aiohttp_jinja2
-from aiohttp import web
 from aiohttp_session import get_session
+from aiohttp import web
+from app.controllers.decorators import login_required
+from aiohttp_jinja2 import render_template_async
+from app.modules.security import Security
 
-def login_required(func):
-    async def wrapped(request, *args, **kwargs):
-        session = await get_session(request)
-        if not session.get("user"):
-            return web.HTTPFound("/login")
-        return await func(request, *args, **kwargs)
-
-    return wrapped
+#@login_required
+@login_required
+async def home(request):
+    context = {}
+    return await render_template_async("home.html", request,  context)
 
 async def login_form(request):
     context = {}
     # example
     # data = await manager.get_data
 
-    return await aiohttp_jinja2.render_template_async("login.html", request, context)
+    return await render_template_async("login.html", request, context)
 
 async def login(request):
     # Pega os dados do formulário de login
@@ -34,8 +33,3 @@ async def login(request):
 
     else:
        return web.HTTPUnauthorized(text="Credenciais inválidas")
-
-@login_required
-async def index(request):
-
-    return await aiohttp_jinja2.render_template_async("index.html", request, {})
