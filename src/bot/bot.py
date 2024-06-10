@@ -10,6 +10,7 @@ class Bot(object):
 
     def __init__(self, services):
         self.services = services
+        self.queueController = QueueController(self)
 
     async def startListenMessages(self):
         await self.services.wppSocketClient.add_trigger("received-message", self.onMessage)
@@ -29,19 +30,15 @@ class Bot(object):
             logging.debug(f"ignoring message from {sender["phone"]} because it is not dev phone")
             return
 
-        chat, exists = await models.Chat.get_or_create(phone=sender["phone"], name=sender["name"])
+        sender_chat, exists = await models.Chat.get_or_create(phone=sender["phone"], name=sender["name"])
 
-        #return await self.check_chat(message, chat)
+        if sender_chat.queue:
+            await self.queueController.notifyMembers(message, sender_chat)
 
-        if chat.queue:
-            pass
-            #here i have intercepted the message
-
-        elif not await self.chatIsChoosingQueue(chat):
-            await self.makeContact(chat)
+        elif not await self.chatIsChoosingQueue(sender_chat):
+            await self.makeContact(sender_chat)
         else:
-            await self.checkFirstContactResponse(chat, message)
-
+            await self.chatIsAnsweringQueue(sender_chat, message)
 
     async def chatIsChoosingQueue(self, chat):
         if not chat.queue and chat not in self.chats_choosing_queue:
@@ -49,18 +46,20 @@ class Bot(object):
         elif chat in self.chats_choosing_queue:
             return True
 
-    async def checkFirstContactResponse(self, chat, message):
+    async def chatIsAnsweringQueue(self, chat, message):
         queues = await models.Queue.all()
 
         for queue in queues:
             if message == str(queue.index):
 
                 chat.queue = queue
-                await self.sendMessage(chat, queue.greetings_message)
+                await chat.save()
+                await self.sendMessage (queue.greetings_message, chat=chat)
                 self.chats_choosing_queue.remove(chat)
 
                 return True
-        await self.sendMessage(chat, "Fila inválida, por favor digite o índice da fila desejada")
+
+        await self.sendMessage("Fila inválida, por favor digite o índice da fila desejada", chat=chat)
         await self.makeContact(chat)
 
     async def makeContact(self, chat):
@@ -76,7 +75,7 @@ class Bot(object):
             return message
 
         message = await __getFirstContactMessage(chat)
-        await self.sendMessage(chat, message)
+        await self.sendMessage(message, chat=chat)
         if chat not in self.chats_choosing_queue:
             self.chats_choosing_queue.append(chat)
 
@@ -103,11 +102,21 @@ class Bot(object):
         return await self.services.wppApiClient.makeRequest("POST", endpoint, headers, body)
 
 class QueueController(object):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, bot) -> None:
+        self.bot = bot
 
     async def sendToAllMember(self, message):
         pass
 
-    async def notifyMember(self, message):
-        pass
+    async def notifyMembers(self, message, sender_chat):
+        chat = await models.Chat.get(phone=sender_chat.phone).prefetch_related("user" ,"queue", "queue__supervised_by")
+
+        notification_message = f"Enviado por: {chat.name}\n{message}\n at:TODO Timestamp"
+
+        print(chat.queue.name , "¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨")
+
+        users_watching_queue = await chat.queue.supervised_by.all().prefetch_related("queuesUnderSupervision", "chat")
+        logging.info(f"notifying {chat.queue.name} about {message}")
+        for user in users_watching_queue:
+            await self.bot.sendMessage(notification_message, chat=user.chat)
+

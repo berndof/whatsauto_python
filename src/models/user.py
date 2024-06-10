@@ -11,6 +11,5 @@ class User(Model):
     chat = fields.ForeignKeyField("models.Chat", on_delete=fields.CASCADE, related_name="user", default=None, null=True)
     username = fields.CharField(max_length=30, unique=True)
     password = fields.BinaryField()
-    queuesUnderSupervision = fields.ManyToManyField("models.Queue", related_name="queues_under_supervision", default=None, null=True)
 
 

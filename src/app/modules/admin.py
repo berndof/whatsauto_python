@@ -23,6 +23,6 @@ class Admin(object):
         print(f"queues:{queues}")
 
         for queue in queues:
-            await user.queuesUnderSupervision.add(queue)
+            await queue.supervised_by.add(user)
 
         return user

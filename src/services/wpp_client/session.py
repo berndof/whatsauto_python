@@ -85,7 +85,7 @@ class WPPSession(object):
 
             await self.wppSocketClient.add_trigger("session-logged", on_catch=on_session_loged)
 
-            while self.session.status != "CONNECTED":
+            while self.status != "CONNECTED":
                 logging.debug("waiting for session loged")
                 ...
 

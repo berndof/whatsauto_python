@@ -9,4 +9,4 @@ class Queue(Model):
     name = fields.CharField(max_length=255, unique=True)
     greetings_message = fields.TextField()
     index = fields.IntField(unique=True)
-    
+    supervised_by = fields.ManyToManyField("models.User", related_name="queuesUnderSupervision", default=None, null=True)
